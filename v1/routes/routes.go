@@ -1,0 +1,81 @@
+package routes
+
+import (
+	"fmt"
+	"time"
+	fiber "github.com/gofiber/fiber/v2"
+	server "github.com/0187773933/GO_SERVER/v1/server"
+	rate_limiter "github.com/gofiber/fiber/v2/middleware/limiter"
+)
+
+func PublicMaxedOut( c *fiber.Ctx ) error {
+	ip_address := c.IP()
+	log_message := fmt.Sprintf( "%s === %s === %s === PUBLIC RATE LIMIT REACHED !!!" , ip_address , c.Method() , c.Path() );
+	fmt.Println( log_message )
+	c.Set( "Content-Type" , "text/html" )
+	return c.SendString( "<html><h1>loading ...</h1><script>setTimeout(function(){ window.location.reload(1); }, 6000);</script></html>" )
+}
+var PublicLimter = rate_limiter.New( rate_limiter.Config{
+	Max: 3 ,
+	Expiration: 1 * time.Second ,
+	KeyGenerator: func( c *fiber.Ctx ) string {
+		return c.Get( "x-forwarded-for" )
+	} ,
+	LimitReached: PublicMaxedOut ,
+	LimiterMiddleware: rate_limiter.SlidingWindow{} ,
+})
+
+func SetupPublicRoutes( s *server.Server ) {
+	prefix_string := "/"
+	if s.Config.URLS.Prefix != "" {
+		prefix_string = s.Config.URLS.Prefix
+	}
+	prefix := s.FiberApp.Group( prefix_string )
+	prefix.Get( "/" , PublicLimter , func( c *fiber.Ctx ) error {
+		return c.JSON( fiber.Map{
+			"result": true ,
+			"url": "/" ,
+		})
+	})
+	// s.FiberApp.Get( "/twitch" , func( c *fiber.Ctx ) error {
+	// 	c.Set( "Content-Type" , "text/html" )
+	// 	return c.SendFile( "./v1/html/twitch.html" )
+	// })
+	// s.FiberApp.Post( "/update_position" , PublicLimter , UpdatePosition( s ) )
+	// prefix := s.FiberApp.Group( s.Config.URLS.Prefix )
+	// prefix.Get( "/:uuid.:ext" , UUIDFileLimter , ServeFile( s ) )
+
+	// // youtube
+	// youtube := prefix.Group( "/youtube" )
+	// youtube.Get( "/:library_key/:session_id" , YouTubeSessionHTMLPlayer( s ) )
+
+	// // local library
+	// library := prefix.Group( "/library" )
+	// library.Get( "/get/entries" , LibraryGetEntries( s ) )
+	// // library-session
+	// prefix.Use( PublicLimter )
+	// prefix.Get( "/:library_key/:session_id/reset" , SessionReset( s ) )
+	// prefix.Get( "/:library_key/:session_id/total" , SessionTotal( s ) )
+	// prefix.Get( "/:library_key/:session_id/index" , SessionIndex( s ) )
+	// prefix.Get( "/:library_key/:session_id/set/index/:index" , SessionSetIndex( s ) )
+	// prefix.Get( "/:library_key/:session_id/previous" , SessionPrevious( s ) )
+	// prefix.Get( "/:library_key/:session_id/next" , SessionNext( s ) )
+	// prefix.Get( "/:library_key/:session_id" , SessionHTMLPlayer( s ) ) // HTML Player
+	// prefix.Get( "/:library_key/:session_id/:index" , SessionHTMLPlayerAtIndex( s ) ) // HTML Player at Session Index ?
+}
+
+func SetupAdminRoutes( s *server.Server ) {
+	prefix_string := "/"
+	if s.Config.URLS.AdminPrefix != "" {
+		prefix_string = s.Config.URLS.AdminPrefix
+	}
+	admin := s.FiberApp.Group( prefix_string )
+	admin.Get( "/" , PublicLimter , func( c *fiber.Ctx ) error {
+		return c.JSON( fiber.Map{
+			"result": true ,
+			"url": "/" ,
+		})
+	})
+	// admin.Use( s.ValidateAdminMW )
+	// admin.Get( "/add/youtube/playlist/:playlist_id" , YouTubeAddPlaylist( s ) )
+}
