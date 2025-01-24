@@ -77,6 +77,7 @@ type User struct {
 	AllowedToCheckIn bool `json:"allowed_to_checkin"`
 	Language string `json:"language"`
 	SimilarUsers []User `json:"similar_users"`
+	ECB string `json:"ecb"`
 }
 
 func New() ( new_user User ) {

@@ -25,7 +25,6 @@ var PublicLimter = rate_limiter.New( rate_limiter.Config{
 	LimiterMiddleware: rate_limiter.SlidingWindow{} ,
 })
 
-
 func SetupPublicRoutes( s *server.Server ) {
 	prefix_string := "/"
 	if s.Config.URLS.Prefix != "" {

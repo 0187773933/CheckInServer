@@ -4,8 +4,206 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Admin - New User</title>
+	<script src="https://cdn.jsdelivr.net/npm/tweetnacl/nacl.min.js"></script>
 </head>
 <body>
-	<h1>New User</h1>
+	<h1>Create New User</h1>
+	<form action="/submit_user" method="post">
+		<fieldset>
+			<legend>User Information</legend>
+
+			<label for="username">Username:</label>
+			<input type="text" id="username" name="username" ><br><br>
+
+			<label for="email">Email Address:</label>
+			<input type="email" id="email" name="email_address" ><br><br>
+
+			<label for="phone">Phone Number:</label>
+			<input type="tel" id="phone" name="phone_number"><br><br>
+
+			<label for="language">Preferred Language:</label>
+			<input type="text" id="language" name="language"><br><br>
+
+			<label for="family_size">Family Size:</label>
+			<input type="number" id="family_size" name="family_size" value="1" min="1"><br><br>
+		</fieldset>
+
+		<fieldset>
+			<legend>Personal Identity</legend>
+
+			<label for="first_name">First Name:</label>
+			<input type="text" id="first_name" name="identity[first_name]" required><br><br>
+
+			<label for="last_name">Last Name:</label>
+			<input type="text" id="last_name" name="identity[last_name]" required><br><br>
+
+			<label for="middle_name">Middle Name:</label>
+			<input type="text" id="middle_name" name="identity[middle_name]"><br><br>
+
+			<label for="age">Age:</label>
+			<input type="number" id="age" name="identity[age]" min="0"><br><br>
+
+			<label for="sex">Sex:</label>
+			<input type="text" id="sex" name="identity[sex]"><br><br>
+
+			<label for="height">Height:</label>
+			<input type="text" id="height" name="identity[height]"><br><br>
+
+			<label for="eye_color">Eye Color:</label>
+			<input type="text" id="eye_color" name="identity[eye_color]"><br><br>
+
+			<label for="spouse">Spouse:</label>
+			<input type="checkbox" id="spouse" name="identity[spouse]"><br><br>
+		</fieldset>
+
+		<fieldset>
+			<legend>Address</legend>
+
+			<label for="street_number">Street Number:</label>
+			<input type="text" id="street_number" name="identity[address][street_number]"><br><br>
+
+			<label for="street_name">Street Name:</label>
+			<input type="text" id="street_name" name="identity[address][street_name]"><br><br>
+
+			<label for="address_two">Address Line 2:</label>
+			<input type="text" id="address_two" name="identity[address][address_two]"><br><br>
+
+			<label for="city">City:</label>
+			<input type="text" id="city" name="identity[address][city]"><br><br>
+
+			<label for="state">State:</label>
+			<input type="text" id="state" name="identity[address][state]"><br><br>
+
+			<label for="zipcode">Zip Code:</label>
+			<input type="text" id="zipcode" name="identity[address][zipcode]"><br><br>
+		</fieldset>
+
+		<fieldset>
+			<legend>Date of Birth</legend>
+
+			<label for="dob_month">Month:</label>
+			<input type="text" id="dob_month" name="identity[date_of_birth][month]"><br><br>
+
+			<label for="dob_day">Day:</label>
+			<input type="number" id="dob_day" name="identity[date_of_birth][day]" min="1" max="31"><br><br>
+
+			<label for="dob_year">Year:</label>
+			<input type="number" id="dob_year" name="identity[date_of_birth][year]" min="1900"><br><br>
+		</fieldset>
+
+		<fieldset>
+			<legend>Verification</legend>
+
+			<label for="verified">Verified:</label>
+			<input type="checkbox" id="verified" name="verified"><br><br>
+		</fieldset>
+
+		<button type="submit">Create User</button>
+	</form>
+
+	<script type="text/javascript">
+		function get_blank_user() {
+			return new Promise( function( resolve , reject ) {
+				try {
+					var currentUrl = window.location.href;
+					var url = currentUrl.replace( /\/new$/ , "/blank" );
+					var xhr = new XMLHttpRequest();
+					xhr.open( "GET" , url , false );
+					xhr.setRequestHeader( "Content-Type" , "application/json" );
+					xhr.onload = function () {
+						if ( xhr.status === 200 ) {
+							var response = JSON.parse( xhr.responseText );
+							resolve( response );
+							return;
+						} else {
+							console.error( "Error fetching blank user:" , xhr.statusText );
+							resolve( false );
+							return;
+						}
+					};
+					xhr.onerror = function () {
+						console.error( "GET request error" );
+						resolve( false );
+						return;
+					};
+					xhr.send();
+				}
+				catch( error ) { console.log( error ); resolve( false ); return; }
+			});
+		}
+		function post_new_user( blank_user ) {
+			return new Promise( function( resolve , reject ) {
+				try {
+					var current_url = window.location.href;
+					var url = current_url.replace( /\/new$/ , "/edit" );
+					var xhr = new XMLHttpRequest();
+					xhr.open( "POST" , url , false );
+					xhr.setRequestHeader( "Content-Type" , "application/json" );
+					xhr.onload = function () {
+						if ( xhr.status === 200 ) {
+							console.log( "Successfully posted to:" , url );
+							resolve( true );
+							return;
+						} else {
+							console.error( "Error posting to:" , url , xhrPost.statusText );
+							resolve( false );
+							return;
+						}
+					};
+					xhr.onerror = function () {
+						console.error( "POST request error" );
+						resolve( false );
+						return;
+					};
+					var data = JSON.stringify( blank_user );
+					xhr.send( data );
+				}
+				catch( error ) { console.log( error ); resolve( false ); return; }
+			});
+		}
+		function secret_box_encrypt( js_obj , key_one , key_two ) {
+			try {
+				let key_one_bytes = new Uint8Array( key_one );
+				let key_one_nonce = new Uint8Array( 24 );
+				window.crypto.getRandomValues( key_one_nonce );
+				let userString = JSON.stringify( js_obj );
+				let userBytes = new TextEncoder().encode( userString );
+				let sealed = nacl.secretbox( userBytes , key_one_nonce , key_one_bytes );
+				let combined = new Uint8Array( key_one_nonce.length + sealed.length );
+				combined.set( key_one_nonce );
+				combined.set( sealed , key_one_nonce.length );
+
+				let key_two_bytes = new Uint8Array( key_two );
+				let key_two_nonce = new Uint8Array( 24 );
+				window.crypto.getRandomValues( key_two_nonce );
+				let encrypted = nacl.secretbox( combined , key_two_nonce , key_two_bytes );
+
+				var combined2 = new Uint8Array(key_two_nonce.length + encrypted.length );
+				combined2.set( key_two_nonce );
+				combined2.set( encrypted , key_two_nonce.length );
+
+				let result = btoa(String.fromCharCode.apply(null, combined2));
+				return result
+			} catch( error ) { console.log( error ); return false; }
+		}
+
+		function secret_box_generate_new_key() {
+			let key = nacl.randomBytes( 32 );
+			return key;
+		}
+		function secret_box_key_tostring( key_bytes ) {
+			let key_string = Array.from( key_bytes ).map( byte => byte.toString( 16 ).padStart( 2 , '0' ) ).join( '' );
+			return key_string;
+		}
+		( async ()=> {
+			let user = await get_blank_user();
+			console.log( user );
+			let second_key = secret_box_generate_new_key();
+			console.log( second_key );
+			user.blank.ecb = secret_box_key_tostring( second_key )
+			let user_encrypted = secret_box_encrypt( user.blank , second_key , user.ecb );
+			console.log( user_encrypted );
+		})();
+	</script>
 </body>
 </html>
