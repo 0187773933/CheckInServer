@@ -7,6 +7,7 @@ require (
 	github.com/0187773933/Logger v1.1.12
 	github.com/boltdb/bolt v1.3.1
 	github.com/gofiber/fiber/v2 v2.52.6
+	github.com/satori/go.uuid v1.2.0
 )
 
 require (

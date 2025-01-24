@@ -25,6 +25,7 @@ var PublicLimter = rate_limiter.New( rate_limiter.Config{
 	LimiterMiddleware: rate_limiter.SlidingWindow{} ,
 })
 
+
 func SetupPublicRoutes( s *server.Server ) {
 	prefix_string := "/"
 	if s.Config.URLS.Prefix != "" {
@@ -76,6 +77,9 @@ func SetupAdminRoutes( s *server.Server ) {
 			"url": "/" ,
 		})
 	})
-	// admin.Use( s.ValidateAdminMW )
-	// admin.Get( "/add/youtube/playlist/:playlist_id" , YouTubeAddPlaylist( s ) )
+	admin.Use( s.ValidateAdminMW )
+	admin.Get( "/user/new" , UserNewForm( s ) ) // returns new user form html
+	admin.Get( "/user/blank" , UserBlank( s ) ) // returns blank new user , un-saved
+	admin.Post( "/user/edit" , UserEdit( s ) )
+	// admin.Post( "/user/delete" , UserDelete( s ) )
 }
