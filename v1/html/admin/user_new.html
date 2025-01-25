@@ -5,6 +5,9 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Admin - New User</title>
 	<script src="https://cdn.jsdelivr.net/npm/tweetnacl/nacl.min.js"></script>
+	<script type="module">
+	  import { Kyber } from 'https://unpkg.com/mlkem@1.0.0/dist/index.mjs';
+	</script>
 </head>
 <body>
 	<h1>Create New User</h1>
@@ -214,6 +217,10 @@
 			let user_encrypted = secret_box_encrypt( user.blank , second_key , user.ecb );
 			post_new_user( { "w": user_encrypted , "u": user.blank.uuid , "s": user.blank.ecb } );
 			console.log( user_encrypted );
+
+			console.log( Kyber.kem.keyPair() );
+
+
 		})();
 	</script>
 </body>

@@ -79,8 +79,6 @@ func UserEdit( s *server.Server ) fiber.Handler {
 		second_key_hex , _ := hex.DecodeString( second_key_string )
 		var second_key_bytes [32]byte
 		copy( second_key_bytes[ : ] , second_key_hex )
-		var inner_nonce [24]byte
-		copy( inner_nonce[ : ] , outer_decrypted[ 0 : 24 ] )
 
 		encrypted_user , _ := base64.StdEncoding.DecodeString( encrypted_user_b64_string )
 
@@ -96,9 +94,14 @@ func UserEdit( s *server.Server ) fiber.Handler {
 			outer_decrypted , ok := secretbox.Open( nil , encrypted_user[ 24 : ] , &nonce , &outer_key_array )
 			if ok != true { fmt.Println( "Error decrypting user:" ) }
 
+			var inner_nonce [24]byte
+			copy( inner_nonce[ : ] , outer_decrypted[ 0 : 24 ] )
 			decrypted , ok := secretbox.Open( nil , outer_decrypted[ 24 : ] , &inner_nonce , &second_key_bytes )
 			if ok != true { fmt.Println( "Error decrypting user:" ) }
 
+			// fmt.Println( string( decrypted ) )
+
+			// decrypted_bucket_value := encrypt.ChaChaDecryptBytes( u.Config.BoltDBEncryptionKey , x_user )
 			json.Unmarshal( decrypted , &decrypted_user )
 			return nil
 		})
