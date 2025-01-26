@@ -31,6 +31,15 @@ func SetupPublicRoutes( s *server.Server ) {
 		prefix_string = s.Config.URLS.Prefix
 	}
 	prefix := s.FiberApp.Group( prefix_string )
+
+	prefix.Get( "/test/:filename" , func( c *fiber.Ctx ) error {
+		fmt.Println( c.Params("filename") )
+		file := "./v1/cdn/" + c.Params("filename")
+		c.Set( "Content-Type" , "application/javascript" )
+		fmt.Println( file )
+		return c.SendFile( file )
+	})
+
 	prefix.Get( "/" , PublicLimter , func( c *fiber.Ctx ) error {
 		return c.JSON( fiber.Map{
 			"result": true ,
