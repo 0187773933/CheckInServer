@@ -6,6 +6,7 @@
 	<title>Admin - New User</title>
 	<script src="https://cdn.jsdelivr.net/npm/tweetnacl/nacl.min.js"></script>
 	<script src="/test/crystals-kyber-legacy.js"></script>
+	<!-- <script src="/test/crystals-kyber-legacy-2.js"></script> -->
 
 	<!-- https://pq-crystals.org/kyber/software.shtml -->
 	<!-- https://github.com/dajiaji/crystals-kyber-js -->
@@ -274,8 +275,8 @@
 			post_new_user( { "w": user_encrypted , "u": user.blank.uuid , "s": user.blank.ecb } );
 			console.log( user_encrypted );
 
-			// console.log( Kyber.kem.keyPair() );
 
+			// todo 
 			let recipient = new Kyber.MlKem1024();
 			const [ pkR , skR ] = await recipient.generateKeyPair();
 			console.log( pkR , skR );
@@ -284,7 +285,6 @@
 			console.log( ct , ssS );
 			const ssR = await recipient.decap( ct , skR );
 			console.log( ssS , ssR );
-
 
 		})();
 	</script>

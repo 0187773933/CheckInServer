@@ -1,0 +1,68 @@
+https://pq-crystals.org/kyber/software.shtml
+https://github.com/dajiaji/crystals-kyber-js
+
+brew install deno
+deno compile mod.ts
+npm install -g esbuild
+npm install @noble/hashes
+esbuild mod.ts --bundle --format=esm --global-name=Kyber --outfile=crystals-kyber.min.js
+
+	<script type="module">
+		import * as kyber from "/test/crystals-kyber.min.js";
+		window.kyber = kyber;
+		( async ()=> {
+			let recipient = new kyber.MlKem1024();
+			const [ pkR , skR ] = await recipient.generateKeyPair();
+			console.log( pkR , skR );
+			const sender = new kyber.MlKem1024();
+			const [ ct , ssS ] = await sender.encap( pkR );
+			console.log( ct , ssS );
+			const ssR = await recipient.decap( ct , skR );
+			console.log( ssS , ssR );
+		})();
+	</script>
+
+then for backwards compatability
+npm install @babel/cli @babel/core @babel/preset-env
+nano .babelrc
+
+{
+  "presets": [
+	["@babel/preset-env", {
+	  "targets": {
+		"ie": "8"
+	  }
+	}]
+  ]
+}
+
+esbuild mod.ts --bundle --format=iife --global-name=Kyber --outfile=crystals-kyber-modern.js
+npx babel crystals-kyber-modern.js --out-file crystals-kyber-legacy.js
+
+( async ()=> {
+	let recipient = new Kyber.MlKem1024();
+	const [ pkR , skR ] = await recipient.generateKeyPair();
+	console.log( pkR , skR );
+	const sender = new Kyber.MlKem1024();
+	const [ ct , ssS ] = await sender.encap( pkR );
+	console.log( ct , ssS );
+	const ssR = await recipient.decap( ct , skR );
+	console.log( ssS , ssR );
+})();
+
+
+===========================================================
+===========================================================
+git clone https://github.com/antontutoveanu/crystals-kyber-javascript.git
+cd crystals-kyber-javascript/
+npm install
+subl
+	remove tests from kyber1024 , etc using fs package
+	change crypto import
+	// const webcrypto = require('crypto').webcrypto;
+	const webcrypto = window.crypto;
+esbuild index.js --bundle --format=iife --global-name=Kyber --outfile=crystals-kyber-modern.js
+esbuild index.js --bundle --format=iife --global-name=Kyber --outfile=crystals-kyber-modern.js
+npx babel crystals-kyber-modern.js --out-file crystals-kyber-legacy.js
+
+	Uncaught ReferenceError: assignment to undeclared variable KeyGen512
