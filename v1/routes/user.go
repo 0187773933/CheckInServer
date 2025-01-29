@@ -38,6 +38,7 @@ func UserBlank( s *server.Server ) fiber.Handler {
 		return c.JSON( fiber.Map{
 			"blank": temp_user ,
 			"ecb": temp_key ,
+			"kp": KyberPublic ,
 		})
 	}
 }
@@ -69,16 +70,18 @@ func UserEdit( s *server.Server ) fiber.Handler {
 			})
 		}
 
-		second_key_string , ok := response[ "s" ].( string )
+		cipher_text_string , ok := response[ "ct" ].( string )
 		if !ok {
-			fmt.Println( "Error parsing JSON: u" , ok )
+			fmt.Println( "Error parsing JSON: ct" , ok )
 			return c.Status( fiber.StatusBadRequest ).JSON(fiber.Map{
 				"error": "Failed to parse JSON request",
 			})
 		}
-		second_key_hex , _ := hex.DecodeString( second_key_string )
-		var second_key_bytes [32]byte
-		copy( second_key_bytes[ : ] , second_key_hex )
+		cipher_text_hex , _ := hex.DecodeString( cipher_text_string )
+		var cipher_text_bytes [ 1568 ]byte
+		copy( cipher_text_bytes[ : ] , cipher_text_hex )
+		shared_secret := encryption.KyberDecrypt( cipher_text_bytes , KyberPrivate )
+		fmt.Println( shared_secret )
 
 		encrypted_user , _ := base64.StdEncoding.DecodeString( encrypted_user_b64_string )
 
@@ -96,7 +99,7 @@ func UserEdit( s *server.Server ) fiber.Handler {
 
 			var inner_nonce [24]byte
 			copy( inner_nonce[ : ] , outer_decrypted[ 0 : 24 ] )
-			decrypted , ok := secretbox.Open( nil , outer_decrypted[ 24 : ] , &inner_nonce , &second_key_bytes )
+			decrypted , ok := secretbox.Open( nil , outer_decrypted[ 24 : ] , &inner_nonce , &shared_secret )
 			if ok != true { fmt.Println( "Error decrypting user:" ) }
 
 			// fmt.Println( string( decrypted ) )

@@ -3,10 +3,17 @@ package routes
 import (
 	"fmt"
 	"time"
+	hex "encoding/hex"
 	fiber "github.com/gofiber/fiber/v2"
 	server "github.com/0187773933/GO_SERVER/v1/server"
+	encryption "github.com/0187773933/encryption/v1/encryption"
 	rate_limiter "github.com/gofiber/fiber/v2/middleware/limiter"
 )
+
+var KyberPrivate [3168]byte
+var KyberPublic [1568]byte
+var KyberPrivateString string
+var KyberPublicString string
 
 func PublicMaxedOut( c *fiber.Ctx ) error {
 	ip_address := c.IP()
@@ -86,6 +93,11 @@ func SetupAdminRoutes( s *server.Server ) {
 		})
 	})
 	admin.Use( s.ValidateAdminMW )
+
+ 	KyberPublic , KyberPrivate = encryption.KyberGenerateKeyPair()
+	KyberPrivateString = hex.EncodeToString( KyberPrivate[ : ] )
+	KyberPublicString = hex.EncodeToString( KyberPublic[ : ] )
+
 	admin.Get( "/user/new" , UserNewForm( s ) ) // returns new user form html
 	admin.Get( "/user/blank" , UserBlank( s ) ) // returns blank new user , un-saved
 	admin.Post( "/user/edit" , UserEdit( s ) )

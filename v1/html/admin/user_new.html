@@ -232,7 +232,7 @@
 				let combined = new Uint8Array( key_one_nonce.length + sealed.length );
 				combined.set( key_one_nonce );
 				combined.set( sealed , key_one_nonce.length );
-				console.log("After first encryption:", combined);
+				// console.log("After first encryption:", combined);
 
 				let key_two_bytes = new Uint8Array( key_two );
 				let key_two_nonce = new Uint8Array( 24 );
@@ -242,7 +242,7 @@
 				var combined2 = new Uint8Array(key_two_nonce.length + encrypted.length );
 				combined2.set( key_two_nonce );
 				combined2.set( encrypted , key_two_nonce.length );
-				console.log("After second encryption:", encrypted);
+				// console.log("After second encryption:", encrypted);
 
 				let result = btoa( String.fromCharCode.apply( null , combined2 ) );
 				return result
@@ -253,38 +253,47 @@
 			let key = nacl.randomBytes( 32 );
 			return key;
 		}
-		function secret_box_key_tostring( key_bytes ) {
+		function convert_bytes_to_hex_string( key_bytes ) {
 			let key_string = Array.from( key_bytes ).map( byte => byte.toString( 16 ).padStart( 2 , '0' ) ).join( '' );
 			return key_string;
 		}
 		( async ()=> {
 
-			document.getElementById( 'new-user-form' ).addEventListener('submit', function (event) {
-				// Get the current URL
+			document.getElementById( "new-user-form" ).addEventListener( "submit" , function ( event ) {
 				var current_url = window.location.href;
-				var newAction = current_url.replace(/\/new$/, "/edit");
+				var newAction = current_url.replace( /\/new$/ , "/edit" );
 				this.action = newAction;
 			});
 
+			// 1.) Get Blank User Form
 			let user = await get_blank_user();
 			console.log( user );
-			let second_key = secret_box_generate_new_key();
-			console.log( second_key );
-			user.blank.ecb = secret_box_key_tostring( second_key );
-			let user_encrypted = secret_box_encrypt( user.blank , second_key , user.ecb );
-			post_new_user( { "w": user_encrypted , "u": user.blank.uuid , "s": user.blank.ecb } );
-			console.log( user_encrypted );
 
-
-			// todo 
+			// 2.) Generate Cypher-Text and Shared-Secret based on Server's Public Key
 			let recipient = new Kyber.MlKem1024();
 			const [ pkR , skR ] = await recipient.generateKeyPair();
-			console.log( pkR , skR );
+			// console.log( pkR , skR );
 			const sender = new Kyber.MlKem1024();
-			const [ ct , ssS ] = await sender.encap( pkR );
-			console.log( ct , ssS );
-			const ssR = await recipient.decap( ct , skR );
-			console.log( ssS , ssR );
+			const user_kp_uint8 = new Uint8Array( user.kp );
+			const [ ct , ssS ] = await sender.encap( user_kp_uint8 );
+			// console.log( ct );
+			// console.log( ct.length );
+			console.log( ssS );
+			// const ssR = await recipient.decap( ct , skR );
+			// console.log( ssS , ssR );
+
+			// 3.) Encrypt User Data with Shared-Secret
+			// let second_key = secret_box_generate_new_key();
+			// console.log( second_key );
+			// user.blank.ecb = convert_bytes_to_hex_string( second_key );
+			const second_key = ssS.slice( 0 , 32 );
+			let user_encrypted = secret_box_encrypt( user.blank , second_key , user.ecb );
+			console.log( user_encrypted );
+
+			// 4.) Post Encrypted User Data to Server
+			post_new_user( { "w": user_encrypted , "u": user.blank.uuid , "ct": convert_bytes_to_hex_string( ct ) } );
+			// console.log( user_encrypted );
+
 
 		})();
 	</script>
