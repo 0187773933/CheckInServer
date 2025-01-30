@@ -25,6 +25,13 @@ func UserNewForm( s *server.Server ) fiber.Handler {
 	}
 }
 
+func UserEditForm( s *server.Server ) fiber.Handler {
+	return func( c *fiber.Ctx ) error {
+		c.Set( "Content-Type" , "text/html" )
+		return c.SendFile( "./v1/html/admin/user_edit.html" )
+	}
+}
+
 func UserBlank( s *server.Server ) fiber.Handler {
 	return func( c *fiber.Ctx ) error {
 		temp_key := encryption.SecretBoxGenerateRandomKey()

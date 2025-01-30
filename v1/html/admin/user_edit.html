@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Admin - New User</title>
+	<title>Admin - Edit User</title>
 	<script src="https://cdn.jsdelivr.net/npm/tweetnacl/nacl.min.js"></script>
 </head>
 <body>
@@ -109,20 +109,15 @@
 			<label for="username">Child's Name :</label>
 			<input type="text" id="username" name="username" ><br><br>
 
-			<label for="parents_first_name">Parent's First Name :</label>
-			<input type="text" id="parents_first_name" name="parents_first_name" ><br><br>
+			<label for="email">Parent's Name :</label>
+			<input type="email" id="email" name="email_address" ><br><br>
 
-			<label for="parents_last_name">Parent's First Name :</label>
-			<input type="text" id="parents_last_name" name="parents_last_name" ><br><br>
-
-			<label for="phone_number">Phone Number :</label>
-			<input type="tel" id="phone_number" name="phone_number"><br><br>
+			<label for="phone">Phone Number :</label>
+			<input type="tel" id="phone" name="phone_number"><br><br>
 
 			<label for="family_size">Family Size:</label>
 			<input type="number" id="family_size" name="family_size" value="1" min="1"><br><br>
 		</fieldset>
-
-		<button type="submit">Create User</button>
 	</form>
 
 	<script type="text/javascript">
@@ -217,101 +212,84 @@
 		}
 
 		async function derive_key(shared_secret) {
-			let hashBuffer = await crypto.subtle.digest("SHA-256", shared_secret);
-			return new Uint8Array(hashBuffer).slice(0, 32);
+		    let hashBuffer = await crypto.subtle.digest("SHA-256", shared_secret);
+		    return new Uint8Array(hashBuffer).slice(0, 32);
 		}
 
 		async function derive_key_hkdf(shared_secret) {
-			const salt = new Uint8Array(0); // Optional salt (can be left empty)
-			const info = new Uint8Array(0); // Optional info field
+		    const salt = new Uint8Array(0); // Optional salt (can be left empty)
+		    const info = new Uint8Array(0); // Optional info field
 
-			let keyMaterial = await crypto.subtle.importKey(
-				"raw", shared_secret, { name: "HKDF" }, false, ["deriveBits"]
-			);
+		    let keyMaterial = await crypto.subtle.importKey(
+		        "raw", shared_secret, { name: "HKDF" }, false, ["deriveBits"]
+		    );
 
-			let derivedBits = await crypto.subtle.deriveBits(
-				{ name: "HKDF", hash: "SHA-256", salt, info },
-				keyMaterial, 256
-			);
+		    let derivedBits = await crypto.subtle.deriveBits(
+		        { name: "HKDF", hash: "SHA-256", salt, info },
+		        keyMaterial, 256
+		    );
 
-			return new Uint8Array( derivedBits );
+		    return new Uint8Array(derivedBits);
 		}
 
-		function get_key( secret_key , public_key ) {
-			return new Promise( async function( resolve , reject ) {
-				try {
-					// Kyber Version
-					// console.log( Kyber );
-					// 2.) Generate Cypher-Text and Shared-Secret based on Server's Public Key
-					// let recipient = new Kyber.MlKem1024();
-					// const [ pkR , skR ] = await recipient.generateKeyPair();
-					// const sender = new Kyber.MlKem1024();
-					// const user_kp_uint8 = new Uint8Array( user.kp );
-					// const [ ct , ssS ] = await sender.encap( user_kp_uint8 );
+		( async ()=> {
 
-					// 3.) Encrypt User Data with Shared-Secret
-					// const second_key = ssS.slice( 0 , 32 );
-					// let user_encrypted = secret_box_encrypt( user.blank , second_key , user.ecb );
-					// console.log( user_encrypted );
-
-					// X25519 Version
-					// 2.) Generate Cypher-Text and Shared-Secret based on Server's Public Key
-					let server_pk = base64_to_uint8_array( public_key );
-					// console.log( "server public key" );
-					// console.log( server_pk );
-					// let user_keypair = nacl.box.keyPair();
-					// console.log( user_keypair );
-					// let shared_secret = nacl.box.before( server_pk , user_keypair.secretKey );
-					// let shared_secret = nacl.scalarMult( user_keypair.secretKey , server_pk );
-					let shared_secret = nacl.scalarMult( secret_key , server_pk );
-					// console.log( "shared secret" );
-					// console.log( shared_secret );
-
-					// Derive a key from the shared secret
-					// let derived_key_old = nacl.hash( shared_secret ).slice( 0 , 32 );
-					let derived_key = await derive_key_hkdf( shared_secret );
-					// console.log( derived_key_old );
-					// console.log( "derived key" );
-					// console.log( derived_key );
-					// return derived_key;
-					resolve( derived_key );
-					return;
-				}
-				catch( error ) { console.log( error ); resolve( false ); return; }
+			document.getElementById( "new-user-form" ).addEventListener( "submit" , function ( event ) {
+				var current_url = window.location.href;
+				var newAction = current_url.replace( /\/new$/ , "/edit" );
+				this.action = newAction;
 			});
-		}
 
-		function _post( user ) {
-			return new Promise( async function( resolve , reject ) {
-				try {
-					const user_keypair = nacl.box.keyPair();
-					const derived_key = await get_key( user_keypair.secretKey , user.pk );
-					const user_encrypted = secret_box_encrypt( user.blank , derived_key );
-					const public_key = uint8_array_to_base64( user_keypair.publicKey );
-					post_new_user( { "w": user_encrypted , "pk": public_key } );
-					resolve( true );
-					return;
-				}
-				catch( error ) { console.log( error ); resolve( false ); return; }
-			});
-		}
+			// 1.) Get Blank User Form
+			let user = await get_blank_user();
+			console.log( user );
 
-		( ()=> {
-			document.getElementById( "new-user-form" ).addEventListener( "submit" , async function ( event ) {
-				event.preventDefault();
-				let user = await get_blank_user();
-				user.blank.username = document.getElementById( "username" ).value.trim();
-				let parent = {
-					first_name: document.getElementById( "parents_first_name" ).value.trim() ,
-					last_name: document.getElementById( "parents_last_name" ).value.trim() ,
-					phone_number: document.getElementById( "phone_number" ).value.trim() ,
-				}
-				user.blank.family_members = [];
-				user.blank.family_members.push( parent );
-				user.blank.family_size = parseInt( document.getElementById( "family_size" ).value.trim() );
-				await _post( user );
-				alert( "new user created" );
-			});
+			// Kyber Version
+			// console.log( Kyber );
+			// 2.) Generate Cypher-Text and Shared-Secret based on Server's Public Key
+			// let recipient = new Kyber.MlKem1024();
+			// const [ pkR , skR ] = await recipient.generateKeyPair();
+			// const sender = new Kyber.MlKem1024();
+			// const user_kp_uint8 = new Uint8Array( user.kp );
+			// const [ ct , ssS ] = await sender.encap( user_kp_uint8 );
+
+			// 3.) Encrypt User Data with Shared-Secret
+			// const second_key = ssS.slice( 0 , 32 );
+			// let user_encrypted = secret_box_encrypt( user.blank , second_key , user.ecb );
+			// console.log( user_encrypted );
+
+			// X25519 Version
+			// 2.) Generate Cypher-Text and Shared-Secret based on Server's Public Key
+			let server_pk = base64_to_uint8_array( user.pk );
+			console.log( "server public key" );
+			console.log( server_pk );
+			let user_keypair = nacl.box.keyPair();
+			// console.log( user_keypair );
+			// let shared_secret = nacl.box.before( server_pk , user_keypair.secretKey );
+			let shared_secret = nacl.scalarMult( user_keypair.secretKey , server_pk );
+			console.log( "shared secret" );
+			console.log( shared_secret );
+
+			// Derive a key from the shared secret
+			// let derived_key_old = nacl.hash( shared_secret ).slice( 0 , 32 );
+			let derived_key = await derive_key_hkdf( shared_secret );
+			// console.log( derived_key_old );
+			console.log( "derived key" );
+			console.log( derived_key );
+
+			// 3.) Encrypt User Data with Shared-Secret
+			let user_encrypted = secret_box_encrypt( user.blank , derived_key );
+			// console.log( user_encrypted );
+
+			// 4.) Post Encrypted User Data to Server
+			let pk_b64 = uint8_array_to_base64( user_keypair.publicKey );
+			console.log( user_keypair.publicKey );
+			console.log( pk_b64 );
+
+			post_new_user( { "w": user_encrypted , "pk": pk_b64 } );
+			// console.log( user_encrypted );
+
+
 		})();
 	</script>
 </body>

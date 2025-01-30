@@ -52,6 +52,8 @@ type Person struct {
 	Height string `json:"height"`
 	EyeColor string `json:"eye_color"`
 	Spouse bool `json:"spouse"`
+	PhoneNumber string `json:"phone_number"`
+	EmailAddress string `json:"email_address"`
 }
 
 type User struct {
