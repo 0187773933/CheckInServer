@@ -5,6 +5,7 @@ import (
 	"time"
 	"strings"
 	"embed"
+	b64 "encoding/base64"
 )
 
 //go:embed zoneinfo
@@ -85,4 +86,14 @@ func IsStringInArray( target string , array []string ) ( bool ) {
 		}
 	}
 	return false
+}
+
+func ConvertB64StringToBytes( b64_string string ) ( result []byte ) {
+	result , _ = b64.StdEncoding.DecodeString( b64_string )
+	return
+}
+
+func ConvertBytesToB64String( bytes []byte ) ( result string ) {
+	result = b64.StdEncoding.EncodeToString( bytes )
+	return
 }

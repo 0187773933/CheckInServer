@@ -5,48 +5,6 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Admin - New User</title>
 	<script src="https://cdn.jsdelivr.net/npm/tweetnacl/nacl.min.js"></script>
-	<!-- <script src="/test/kyber.js"></script> -->
-	<!-- <script src="/test/crystals-kyber-legacy-2.js"></script> -->
-	<!-- <script src="/test/bundle.iife.js"></script> -->
-
-	<!-- https://pq-crystals.org/kyber/software.shtml -->
-	<!-- https://github.com/dajiaji/crystals-kyber-js -->
-	<!-- brew install deno
-	deno compile mod.ts
-	npm install -g esbuild
-	npm install @noble/hashes
-	esbuild mod.ts --bundle --format=esm --global-name=Kyber --outfile=crystals-kyber.min.js -->
-
-
-	<!-- npm install @babel/cli @babel/core @babel/preset-env -->
-<!-- 	nano .babelrc
-		{
-		  "presets": [
-			["@babel/preset-env", {
-			  "targets": {
-				"ie": "8"
-			  }
-			}]
-		  ]
-		}
-	esbuild mod.ts --bundle --format=iife --global-name=Kyber --outfile=crystals-kyber-modern.js
-	npx babel crystals-kyber-modern.js --out-file crystals-kyber-legacy.js -->
-<!-- 	<script type="module">
-		import * as kyber from "/test/crystals-kyber.min.js";
-		window.kyber = kyber;
-		( async ()=> {
-			let recipient = new kyber.MlKem1024();
-			const [ pkR , skR ] = await recipient.generateKeyPair();
-			console.log( pkR , skR );
-			const sender = new kyber.MlKem1024();
-			const [ ct , ssS ] = await sender.encap( pkR );
-			console.log( ct , ssS );
-			const ssR = await recipient.decap( ct , skR );
-			console.log( ssS , ssR );
-		})();
-	</script> -->
-
-
 </head>
 <body>
 	<!-- <h1>Create New User</h1> -->
@@ -253,6 +211,27 @@
 			return key;
 		}
 
+		async function derive_key(shared_secret) {
+		    let hashBuffer = await crypto.subtle.digest("SHA-256", shared_secret);
+		    return new Uint8Array(hashBuffer).slice(0, 32);
+		}
+
+		async function derive_key_hkdf(shared_secret) {
+		    const salt = new Uint8Array(0); // Optional salt (can be left empty)
+		    const info = new Uint8Array(0); // Optional info field
+
+		    let keyMaterial = await crypto.subtle.importKey(
+		        "raw", shared_secret, { name: "HKDF" }, false, ["deriveBits"]
+		    );
+
+		    let derivedBits = await crypto.subtle.deriveBits(
+		        { name: "HKDF", hash: "SHA-256", salt, info },
+		        keyMaterial, 256
+		    );
+
+		    return new Uint8Array(derivedBits);
+		}
+
 		( async ()=> {
 
 			document.getElementById( "new-user-form" ).addEventListener( "submit" , function ( event ) {
@@ -282,20 +261,32 @@
 			// X25519 Version
 			// 2.) Generate Cypher-Text and Shared-Secret based on Server's Public Key
 			let server_pk = base64_to_uint8_array( user.pk );
-			// console.log( server_pk );
+			console.log( "server public key" );
+			console.log( server_pk );
 			let user_keypair = nacl.box.keyPair();
 			// console.log( user_keypair );
-			let shared_secret = nacl.box.before( server_pk , user_keypair.secretKey );
-			// console.log( shared_secret );
-			let shared_secret_base64 = uint8_array_to_base64( shared_secret );
-			// console.log( shared_secret_base64 );
+			// let shared_secret = nacl.box.before( server_pk , user_keypair.secretKey );
+			let shared_secret = nacl.scalarMult( user_keypair.secretKey , server_pk );
+			console.log( "shared secret" );
+			console.log( shared_secret );
+
+			// Derive a key from the shared secret
+			// let derived_key_old = nacl.hash( shared_secret ).slice( 0 , 32 );
+			let derived_key = await derive_key_hkdf( shared_secret );
+			// console.log( derived_key_old );
+			console.log( "derived key" );
+			console.log( derived_key );
 
 			// 3.) Encrypt User Data with Shared-Secret
-			let user_encrypted = secret_box_encrypt( user.blank , shared_secret );
+			let user_encrypted = secret_box_encrypt( user.blank , derived_key );
 			// console.log( user_encrypted );
 
 			// 4.) Post Encrypted User Data to Server
-			post_new_user( { "w": user_encrypted , "u": user.blank.uuid , "ct": shared_secret_base64 } );
+			let pk_b64 = uint8_array_to_base64( user_keypair.publicKey );
+			console.log( user_keypair.publicKey );
+			console.log( pk_b64 );
+
+			post_new_user( { "w": user_encrypted , "u": user.blank.uuid , "pk": pk_b64 } );
 			// console.log( user_encrypted );
 
 

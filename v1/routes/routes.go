@@ -105,8 +105,10 @@ func SetupAdminRoutes( s *server.Server ) {
 	// KyberPublicString = hex.EncodeToString( KyberPublic[ : ] )
 
 	X25519Public , X25519Private = encryption.CurveX25519GenerateKeyPair()
-	X25519PrivateB64String = base64.StdEncoding.EncodeToString( X25519Private[ : ] )
+	fmt.Println( "server public key" )
+	fmt.Println( X25519Public )
 	X25519PublicB64String = base64.StdEncoding.EncodeToString( X25519Public[ : ] )
+	X25519PrivateB64String = base64.StdEncoding.EncodeToString( X25519Private[ : ] )
 
 	admin.Get( "/user/new" , UserNewForm( s ) ) // returns new user form html
 	admin.Get( "/user/blank" , UserBlank( s ) ) // returns blank new user , un-saved

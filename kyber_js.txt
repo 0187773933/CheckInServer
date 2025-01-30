@@ -50,6 +50,50 @@ npx babel crystals-kyber-modern.js --out-file crystals-kyber-legacy.js
 	console.log( ssS , ssR );
 })();
 
+===========================================================
+===========================================================
+
+	<!-- <script src="/test/kyber.js"></script> -->
+	<!-- <script src="/test/crystals-kyber-legacy-2.js"></script> -->
+	<!-- <script src="/test/bundle.iife.js"></script> -->
+
+	<!-- https://pq-crystals.org/kyber/software.shtml -->
+	<!-- https://github.com/dajiaji/crystals-kyber-js -->
+	<!-- brew install deno
+	deno compile mod.ts
+	npm install -g esbuild
+	npm install @noble/hashes
+	esbuild mod.ts --bundle --format=esm --global-name=Kyber --outfile=crystals-kyber.min.js -->
+
+
+	<!-- npm install @babel/cli @babel/core @babel/preset-env -->
+<!-- 	nano .babelrc
+		{
+		  "presets": [
+			["@babel/preset-env", {
+			  "targets": {
+				"ie": "8"
+			  }
+			}]
+		  ]
+		}
+	esbuild mod.ts --bundle --format=iife --global-name=Kyber --outfile=crystals-kyber-modern.js
+	npx babel crystals-kyber-modern.js --out-file crystals-kyber-legacy.js -->
+<!-- 	<script type="module">
+		import * as kyber from "/test/crystals-kyber.min.js";
+		window.kyber = kyber;
+		( async ()=> {
+			let recipient = new kyber.MlKem1024();
+			const [ pkR , skR ] = await recipient.generateKeyPair();
+			console.log( pkR , skR );
+			const sender = new kyber.MlKem1024();
+			const [ ct , ssS ] = await sender.encap( pkR );
+			console.log( ct , ssS );
+			const ssR = await recipient.decap( ct , skR );
+			console.log( ssS , ssR );
+		})();
+	</script> -->
+
 
 ===========================================================
 ===========================================================
