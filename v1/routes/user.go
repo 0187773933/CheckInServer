@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	// hex "encoding/hex"
+	filepath "path/filepath"
 	json "encoding/json"
 	sha256 "crypto/sha256"
 	hkdf "golang.org/x/crypto/hkdf"
@@ -167,7 +168,8 @@ func UserEdit( s *server.Server ) fiber.Handler {
 		fmt.Println( decrypted_user )
 
 		// update bleve index
-		bleve_index := NewBleveUserIndex( s.Config.MiscMap[ "bleve_path" ] )
+		bleve_path := filepath.Join( s.Config.SaveFilesPath , s.Config.MiscMap[ "bleve_path" ] )
+		bleve_index := NewBleveUserIndex( bleve_path )
 		defer bleve_index.Close()
 		user1 := BleveUser{
 			UUID: decrypted_user.UUID ,
