@@ -46,7 +46,7 @@ func SetupPublicRoutes( s *server.Server ) {
 	prefix := s.FiberApp.Group( prefix_string )
 
 	prefix.Get( "/test/:filename" , func( c *fiber.Ctx ) error {
-		fmt.Println( c.Params("filename") )
+		fmt.Println( c.Params( "filename" ) )
 		file := "./v1/cdn/" + c.Params("filename")
 		c.Set( "Content-Type" , "application/javascript" )
 		fmt.Println( file )
@@ -105,13 +105,12 @@ func SetupAdminRoutes( s *server.Server ) {
 	// KyberPublicString = hex.EncodeToString( KyberPublic[ : ] )
 
 	X25519Public , X25519Private = encryption.CurveX25519GenerateKeyPair()
-	fmt.Println( "server public key" )
-	fmt.Println( X25519Public )
 	X25519PublicB64String = base64.StdEncoding.EncodeToString( X25519Public[ : ] )
 	X25519PrivateB64String = base64.StdEncoding.EncodeToString( X25519Private[ : ] )
 
 	admin.Get( "/user/new" , UserNewForm( s ) ) // returns new user form html
 	admin.Get( "/user/blank" , UserBlank( s ) ) // returns blank new user , un-saved
 	admin.Post( "/user/edit" , UserEdit( s ) )
+	admin.Get( "/user/get/:uuid" , UserGet( s ) )
 	// admin.Post( "/user/delete" , UserDelete( s ) )
 }

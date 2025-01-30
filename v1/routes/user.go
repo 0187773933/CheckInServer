@@ -48,10 +48,10 @@ func UserBlank( s *server.Server ) fiber.Handler {
 	}
 }
 
-func deriveKey(sharedSecret []byte) []byte {
-    hkdfReader := hkdf.New(sha256.New, sharedSecret, nil, nil)
-    derivedKey := make([]byte, 32)
-    io.ReadFull(hkdfReader, derivedKey)
+func deriveKey( sharedSecret []byte ) []byte {
+    hkdfReader := hkdf.New( sha256.New , sharedSecret , nil , nil )
+    derivedKey := make( []byte , 32 )
+    io.ReadFull( hkdfReader , derivedKey )
     return derivedKey
 }
 
@@ -63,37 +63,27 @@ func UserEdit( s *server.Server ) fiber.Handler {
 		var response map[string]interface{}
 		if err := json.Unmarshal( body , &response ); err != nil {
 			fmt.Println( "Error parsing JSON:", err)
-			return c.Status( fiber.StatusBadRequest ).JSON(fiber.Map{
+			return c.Status( fiber.StatusBadRequest ).JSON( fiber.Map{
 				"error": "Failed to parse JSON request",
 			})
 		}
 		encrypted_user_b64_string , ok := response[ "w" ].( string )
 		if !ok {
 			fmt.Println( "Error parsing JSON: w" , ok )
-			return c.Status( fiber.StatusBadRequest ).JSON(fiber.Map{
+			return c.Status( fiber.StatusBadRequest ).JSON( fiber.Map{
 				"error": "Failed to parse JSON request",
 			})
 		}
-		// user_uuid , ok := response[ "u" ].( string )
-		// if !ok {
-		// 	fmt.Println( "Error parsing JSON: u" , ok )
-		// 	return c.Status( fiber.StatusBadRequest ).JSON(fiber.Map{
-		// 		"error": "Failed to parse JSON request",
-		// 	})
-		// }
-
 		user_pk_b64_string , ok := response[ "pk" ].( string )
 		if !ok {
 			fmt.Println( "Error parsing JSON: pk" , ok )
-			return c.Status( fiber.StatusBadRequest ).JSON(fiber.Map{
+			return c.Status( fiber.StatusBadRequest ).JSON( fiber.Map{
 				"error": "Failed to parse JSON request",
 			})
 		}
-		fmt.Println( user_pk_b64_string )
 		user_pk_bytes := utils.ConvertB64StringToBytes( user_pk_b64_string )
 		var user_pk_bytes_32 [32]byte
 		copy( user_pk_bytes_32[ : ] , user_pk_bytes )
-		fmt.Println( user_pk_bytes_32 )
 
 		// kyber version
 		// var cipher_text_bytes [ 1568 ]byte
@@ -106,59 +96,72 @@ func UserEdit( s *server.Server ) fiber.Handler {
 		// x25519 version
 		// var cipher_text_bytes [ 32 ]byte
 		shared_secret := encryption.CurveX25519KeyExchange( X25519Private , user_pk_bytes_32 )
-		fmt.Println( "shared secret" )
-		fmt.Println( shared_secret )
-		shared_secret_two := encryption.CurveX25519KeyExchange( user_pk_bytes_32 , X25519Private )
-		fmt.Println( shared_secret_two )
-
 		derived_key := deriveKey( shared_secret[ : ] )
-		var derived_key_32 [32]byte
+		var derived_key_32 [ 32 ]byte
 		copy( derived_key_32[ : ] , derived_key )
-		fmt.Println( "derived key" )
-		fmt.Println( derived_key_32 )
-		fmt.Println( len( derived_key_32 ) )
 
+		// Decrypt User
 		encrypted_user_bytes := utils.ConvertB64StringToBytes( encrypted_user_b64_string )
-		fmt.Println( encrypted_user_bytes )
-		fmt.Println( len( encrypted_user_bytes ) )
-
 		var nonce [ 24 ]byte
 		copy( nonce[ : ] , encrypted_user_bytes[ 0 : 24 ] )
-		decrypted_user , _ := secretbox.Open( nil , encrypted_user_bytes[ 24 : ] , &nonce , &derived_key_32 )
-		fmt.Println( string( decrypted_user ) )
-
-		// var decrypted_user user.User
-		// db_result := s.DB.View( func( tx *bolt.Tx ) error {
-		// 	// users_blank_bucket := tx.Bucket( []byte( "users-blank" ) )
-		// 	// outer_key := users_blank_bucket.Get( []byte( user_uuid ) )
-
-		// 	var outer_key_array [ 32 ]byte
-		// 	copy( outer_key_array[ : ] , outer_key )
-		// 	var nonce [ 24 ]byte
-		// 	copy( nonce[ : ] , encrypted_user[ 0 : 24 ] )
-		// 	outer_decrypted , ok := secretbox.Open( nil , encrypted_user_bytes[ 24 : ] , &nonce , &outer_key_array )
-		// 	if ok != true { fmt.Println( "Error decrypting user:" ) }
-
-		// 	var inner_nonce [ 24 ]byte
-		// 	copy( inner_nonce[ : ] , outer_decrypted[ 0 : 24 ] )
-		// 	decrypted , ok := secretbox.Open( nil , outer_decrypted[ 24 : ] , &inner_nonce , &shared_secret )
-		// 	if ok != true { fmt.Println( "Error decrypting user:" ) }
-
-		// 	// fmt.Println( string( decrypted ) )
-
-		// 	// decrypted_bucket_value := encrypt.ChaChaDecryptBytes( u.Config.BoltDBEncryptionKey , x_user )
-		// 	json.Unmarshal( decrypted , &decrypted_user )
-		// 	return nil
-		// })
-		// fmt.Println( decrypted_user )
-		// if db_result != nil {
-		// 	fmt.Println( "Error saving blank user:", db_result )
-		// 	return c.Status( fiber.StatusInternalServerError ).JSON(fiber.Map{
-		// 		"error": "Failed to save blank user",
-		// 	})
-		// }
+		decrypted_user_json , ok := secretbox.Open( nil , encrypted_user_bytes[ 24 : ] , &nonce , &derived_key_32 )
+		if !ok {
+			fmt.Println( "Error decrypting user:" )
+			return c.Status( fiber.StatusInternalServerError ).JSON( fiber.Map{
+				"error": "Failed to decrypt user",
+			})
+		}
+		var decrypted_user user.User
+		json.Unmarshal( decrypted_user_json , &decrypted_user )
+		db_result := s.DB.Update( func( tx *bolt.Tx ) error {
+			users_blank := tx.Bucket( []byte( "users-blank" ) )
+			derived_key_encrypted := encryption.ChaChaEncryptBytes( s.Config.Creds.EncryptionKey , derived_key )
+			users_blank.Put( []byte( decrypted_user.UUID ) , derived_key_encrypted )
+			users_bucket , _ := tx.CreateBucketIfNotExists( []byte( "users" ) )
+			users_bucket.Put( []byte( decrypted_user.UUID ) , []byte( encrypted_user_b64_string ) )
+			return nil
+		})
+		fmt.Println( "Decrypted User:" , decrypted_user )
+		if db_result != nil {
+			fmt.Println( "Error saving blank user:", db_result )
+			return c.Status( fiber.StatusInternalServerError ).JSON( fiber.Map{
+				"error": "Failed to save blank user",
+			})
+		}
 		return c.JSON( fiber.Map{
-			"blank": "" ,
+			"result": true ,
+		})
+	}
+}
+
+func UserGet( s *server.Server ) fiber.Handler {
+	return func( c *fiber.Ctx ) error {
+		uuid := c.Params( "uuid" )
+		var decrypted_user user.User
+		db_result := s.DB.View( func( tx *bolt.Tx ) error {
+			users_blank := tx.Bucket( []byte( "users-blank" ) )
+			users_key_encrypted := users_blank.Get( []byte( uuid ) )
+			users_key_decrypted := encryption.ChaChaDecryptBytes( s.Config.Creds.EncryptionKey , users_key_encrypted )
+			var users_key_32 [ 32 ]byte
+			copy( users_key_32[ : ] , users_key_decrypted )
+			users_bucket := tx.Bucket( []byte( "users" ) )
+			encrypted_user_b64 := users_bucket.Get( []byte( uuid ) )
+			encrypted_user_bytes := utils.ConvertB64StringToBytes( string( encrypted_user_b64 ) )
+			var nonce [ 24 ]byte
+			copy( nonce[ : ] , encrypted_user_bytes[ 0 : 24 ] )
+			decrypted_user_json , _ := secretbox.Open( nil , encrypted_user_bytes[ 24 : ] , &nonce , &users_key_32 )
+			json.Unmarshal( decrypted_user_json , &decrypted_user )
+			return nil
+		})
+		fmt.Println( "Decrypted User:" , decrypted_user )
+		if db_result != nil {
+			fmt.Println( "Error saving blank user:", db_result )
+			return c.Status( fiber.StatusInternalServerError ).JSON( fiber.Map{
+				"error": "Failed to save blank user",
+			})
+		}
+		return c.JSON( fiber.Map{
+			"user": decrypted_user ,
 		})
 	}
 }
