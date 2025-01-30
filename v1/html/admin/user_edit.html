@@ -210,15 +210,13 @@
 			let key = nacl.randomBytes( 32 );
 			return key;
 		}
-
 		async function derive_key(shared_secret) {
 		    let hashBuffer = await crypto.subtle.digest("SHA-256", shared_secret);
 		    return new Uint8Array(hashBuffer).slice(0, 32);
 		}
-
-		async function derive_key_hkdf(shared_secret) {
-		    const salt = new Uint8Array(0); // Optional salt (can be left empty)
-		    const info = new Uint8Array(0); // Optional info field
+		async function derive_key_hkdf( shared_secret ) {
+		    const salt = new Uint8Array( 0 ); // Optional salt (can be left empty)
+		    const info = new Uint8Array( 0 ); // Optional info field
 
 		    let keyMaterial = await crypto.subtle.importKey(
 		        "raw", shared_secret, { name: "HKDF" }, false, ["deriveBits"]

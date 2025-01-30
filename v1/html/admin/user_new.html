@@ -106,13 +106,16 @@
 		<fieldset>
 			<legend>User Information</legend>
 
+			<label for="barcode">Barcode :</label>
+			<input type="text" id="barcode" name="barcode" ><br><br>
+
 			<label for="username">Child's Name :</label>
 			<input type="text" id="username" name="username" ><br><br>
 
 			<label for="parents_first_name">Parent's First Name :</label>
 			<input type="text" id="parents_first_name" name="parents_first_name" ><br><br>
 
-			<label for="parents_last_name">Parent's First Name :</label>
+			<label for="parents_last_name">Parent's Last Name :</label>
 			<input type="text" id="parents_last_name" name="parents_last_name" ><br><br>
 
 			<label for="phone_number">Phone Number :</label>
@@ -219,25 +222,22 @@
 			return key;
 		}
 
-		async function derive_key(shared_secret) {
-			let hashBuffer = await crypto.subtle.digest("SHA-256", shared_secret);
-			return new Uint8Array(hashBuffer).slice(0, 32);
+		async function derive_key( shared_secret ) {
+			let hash_buffer = await crypto.subtle.digest( "SHA-256" , shared_secret );
+			return new Uint8Array( hash_buffer ).slice( 0 , 32 );
 		}
 
-		async function derive_key_hkdf(shared_secret) {
-			const salt = new Uint8Array(0); // Optional salt (can be left empty)
-			const info = new Uint8Array(0); // Optional info field
-
-			let keyMaterial = await crypto.subtle.importKey(
-				"raw", shared_secret, { name: "HKDF" }, false, ["deriveBits"]
+		async function derive_key_hkdf( shared_secret ) {
+			const salt = new Uint8Array( 0 ); // Optional salt (can be left empty)
+			const info = new Uint8Array( 0 ); // Optional info field
+			let key_material = await crypto.subtle.importKey(
+				"raw" , shared_secret , { name: "HKDF" } , false , [ "deriveBits" ]
 			);
-
-			let derivedBits = await crypto.subtle.deriveBits(
-				{ name: "HKDF", hash: "SHA-256", salt, info },
-				keyMaterial, 256
+			let derived_bits = await crypto.subtle.deriveBits(
+				{ name: "HKDF" , hash: "SHA-256" , salt , info } ,
+				key_material , 256
 			);
-
-			return new Uint8Array( derivedBits );
+			return new Uint8Array( derived_bits );
 		}
 
 		function get_key( secret_key , public_key ) {
@@ -309,6 +309,11 @@
 					last_name: document.getElementById( "parents_last_name" ).value.trim() ,
 					phone_number: document.getElementById( "phone_number" ).value.trim() ,
 					email_address: document.getElementById( "email_address" ).value.trim() ,
+				}
+				let barcode = document.getElementById( "barcode" ).value.trim();
+				if ( barcode.length > 0 ) {
+					user.blank.barcodes = [];
+					user.blank.barcodes.push( barcode );
 				}
 				user.blank.family_members = [];
 				user.blank.family_members.push( parent );

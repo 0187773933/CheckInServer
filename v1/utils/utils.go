@@ -2,10 +2,13 @@ package utils
 
 import (
 	"fmt"
+	"io"
 	"time"
 	"strings"
 	"embed"
 	b64 "encoding/base64"
+	sha256 "crypto/sha256"
+	hkdf "golang.org/x/crypto/hkdf"
 )
 
 //go:embed zoneinfo
@@ -96,4 +99,11 @@ func ConvertB64StringToBytes( b64_string string ) ( result []byte ) {
 func ConvertBytesToB64String( bytes []byte ) ( result string ) {
 	result = b64.StdEncoding.EncodeToString( bytes )
 	return
+}
+
+func DeriveKey( shared_secret []byte ) []byte {
+	hkdf_reader := hkdf.New( sha256.New , shared_secret , nil , nil )
+	derived_key := make( []byte , 32 )
+	io.ReadFull( hkdf_reader , derived_key )
+	return derived_key
 }
