@@ -11,6 +11,7 @@ import (
 	user "github.com/0187773933/CheckInServer/v1/user"
 	server "github.com/0187773933/GO_SERVER/v1/server"
 	encryption "github.com/0187773933/encryption/v1/encryption"
+	// kyberk2so "github.com/symbolicsoft/kyber-k2so"
 )
 
 func UserNewForm( s *server.Server ) fiber.Handler {
@@ -38,7 +39,7 @@ func UserBlank( s *server.Server ) fiber.Handler {
 		return c.JSON( fiber.Map{
 			"blank": temp_user ,
 			"ecb": temp_key ,
-			"kp": KyberPublic ,
+			"pk": X25519PublicB64String ,
 		})
 	}
 }
@@ -78,10 +79,21 @@ func UserEdit( s *server.Server ) fiber.Handler {
 			})
 		}
 		cipher_text_hex , _ := hex.DecodeString( cipher_text_string )
-		var cipher_text_bytes [ 1568 ]byte
+		fmt.Println( len( cipher_text_hex ) )
+
+		// kyber version
+		// var cipher_text_bytes [ 1568 ]byte
+		// copy( cipher_text_bytes[ : ] , cipher_text_hex )
+		// // shared_secret := encryption.KyberDecrypt( cipher_text_bytes , KyberPrivate )
+		// shared_secret , err := kyberk2so.KemDecrypt1024( cipher_text_bytes , KyberPrivate )
+		// fmt.Println( err )
+		// fmt.Println( shared_secret )
+
+		// x25519 version
+		var cipher_text_bytes [ 32 ]byte
 		copy( cipher_text_bytes[ : ] , cipher_text_hex )
-		shared_secret := encryption.KyberDecrypt( cipher_text_bytes , KyberPrivate )
-		fmt.Println( shared_secret )
+		fmt.Println( cipher_text_bytes )
+		shared_secret := encryption.CurveX25519KeyExchange( X25519Private , cipher_text_bytes )
 
 		encrypted_user , _ := base64.StdEncoding.DecodeString( encrypted_user_b64_string )
 
@@ -90,14 +102,14 @@ func UserEdit( s *server.Server ) fiber.Handler {
 			users_blank_bucket := tx.Bucket( []byte( "users-blank" ) )
 			outer_key := users_blank_bucket.Get( []byte( user_uuid ) )
 
-			var outer_key_array [32]byte
+			var outer_key_array [ 32 ]byte
 			copy( outer_key_array[ : ] , outer_key )
-			var nonce [24]byte
+			var nonce [ 24 ]byte
 			copy( nonce[ : ] , encrypted_user[ 0 : 24 ] )
 			outer_decrypted , ok := secretbox.Open( nil , encrypted_user[ 24 : ] , &nonce , &outer_key_array )
 			if ok != true { fmt.Println( "Error decrypting user:" ) }
 
-			var inner_nonce [24]byte
+			var inner_nonce [ 24 ]byte
 			copy( inner_nonce[ : ] , outer_decrypted[ 0 : 24 ] )
 			decrypted , ok := secretbox.Open( nil , outer_decrypted[ 24 : ] , &inner_nonce , &shared_secret )
 			if ok != true { fmt.Println( "Error decrypting user:" ) }

@@ -5,8 +5,9 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Admin - New User</title>
 	<script src="https://cdn.jsdelivr.net/npm/tweetnacl/nacl.min.js"></script>
-	<script src="/test/crystals-kyber-legacy.js"></script>
+	<!-- <script src="/test/kyber.js"></script> -->
 	<!-- <script src="/test/crystals-kyber-legacy-2.js"></script> -->
+	<!-- <script src="/test/bundle.iife.js"></script> -->
 
 	<!-- https://pq-crystals.org/kyber/software.shtml -->
 	<!-- https://github.com/dajiaji/crystals-kyber-js -->
@@ -162,6 +163,16 @@
 	</form>
 
 	<script type="text/javascript">
+		function convert_bytes_to_hex_string( key_bytes ) {
+			let key_string = Array.from( key_bytes ).map( byte => byte.toString( 16 ).padStart( 2 , '0' ) ).join( '' );
+			return key_string;
+		}
+		function uint8_array_to_base64( uint8Array ) {
+			return btoa( String.fromCharCode( ...uint8Array ) );
+		}
+		function base64_to_uint8_array( base64 ) {
+			return new Uint8Array( atob( base64 ).split( "" ).map( char => char.charCodeAt( 0 ) ) );
+		}
 		function get_blank_user() {
 			return new Promise( function( resolve , reject ) {
 				try {
@@ -221,31 +232,19 @@
 				catch( error ) { console.log( error ); resolve( false ); return; }
 			});
 		}
-		function secret_box_encrypt( js_obj , key_one , key_two ) {
+		function secret_box_encrypt( js_obj , key ) {
 			try {
-				let key_one_bytes = new Uint8Array( key_one );
-				let key_one_nonce = new Uint8Array( 24 );
-				window.crypto.getRandomValues( key_one_nonce );
-				let userString = JSON.stringify( js_obj );
-				let userBytes = new TextEncoder().encode( userString );
-				let sealed = nacl.secretbox( userBytes , key_one_nonce , key_one_bytes );
-				let combined = new Uint8Array( key_one_nonce.length + sealed.length );
-				combined.set( key_one_nonce );
-				combined.set( sealed , key_one_nonce.length );
-				// console.log("After first encryption:", combined);
-
-				let key_two_bytes = new Uint8Array( key_two );
-				let key_two_nonce = new Uint8Array( 24 );
-				window.crypto.getRandomValues( key_two_nonce );
-				let encrypted = nacl.secretbox( combined , key_two_nonce , key_two_bytes );
-
-				var combined2 = new Uint8Array(key_two_nonce.length + encrypted.length );
-				combined2.set( key_two_nonce );
-				combined2.set( encrypted , key_two_nonce.length );
-				// console.log("After second encryption:", encrypted);
-
-				let result = btoa( String.fromCharCode.apply( null , combined2 ) );
-				return result
+				let key_bytes = new Uint8Array( key );
+				let key_nonce = new Uint8Array( 24 );
+				window.crypto.getRandomValues( key_nonce );
+				let json_string = JSON.stringify( js_obj );
+				let js_bytes = new TextEncoder().encode( json_string );
+				let sealed = nacl.secretbox( js_bytes , key_nonce , key_bytes );
+				let combined = new Uint8Array( key_nonce.length + sealed.length );
+				combined.set( key_nonce );
+				combined.set( sealed , key_nonce.length );
+				let result = uint8_array_to_base64( combined );
+				return result;
 			} catch( error ) { console.log( error ); return false; }
 		}
 
@@ -253,10 +252,7 @@
 			let key = nacl.randomBytes( 32 );
 			return key;
 		}
-		function convert_bytes_to_hex_string( key_bytes ) {
-			let key_string = Array.from( key_bytes ).map( byte => byte.toString( 16 ).padStart( 2 , '0' ) ).join( '' );
-			return key_string;
-		}
+
 		( async ()=> {
 
 			document.getElementById( "new-user-form" ).addEventListener( "submit" , function ( event ) {
@@ -269,29 +265,37 @@
 			let user = await get_blank_user();
 			console.log( user );
 
+			// Kyber Version
+			// console.log( Kyber );
 			// 2.) Generate Cypher-Text and Shared-Secret based on Server's Public Key
-			let recipient = new Kyber.MlKem1024();
-			const [ pkR , skR ] = await recipient.generateKeyPair();
-			// console.log( pkR , skR );
-			const sender = new Kyber.MlKem1024();
-			const user_kp_uint8 = new Uint8Array( user.kp );
-			const [ ct , ssS ] = await sender.encap( user_kp_uint8 );
-			// console.log( ct );
-			// console.log( ct.length );
-			console.log( ssS );
-			// const ssR = await recipient.decap( ct , skR );
-			// console.log( ssS , ssR );
+			// let recipient = new Kyber.MlKem1024();
+			// const [ pkR , skR ] = await recipient.generateKeyPair();
+			// const sender = new Kyber.MlKem1024();
+			// const user_kp_uint8 = new Uint8Array( user.kp );
+			// const [ ct , ssS ] = await sender.encap( user_kp_uint8 );
 
 			// 3.) Encrypt User Data with Shared-Secret
-			// let second_key = secret_box_generate_new_key();
-			// console.log( second_key );
-			// user.blank.ecb = convert_bytes_to_hex_string( second_key );
-			const second_key = ssS.slice( 0 , 32 );
-			let user_encrypted = secret_box_encrypt( user.blank , second_key , user.ecb );
-			console.log( user_encrypted );
+			// const second_key = ssS.slice( 0 , 32 );
+			// let user_encrypted = secret_box_encrypt( user.blank , second_key , user.ecb );
+			// console.log( user_encrypted );
+
+			// X25519 Version
+			// 2.) Generate Cypher-Text and Shared-Secret based on Server's Public Key
+			let server_pk = base64_to_uint8_array( user.pk );
+			// console.log( server_pk );
+			let user_keypair = nacl.box.keyPair();
+			// console.log( user_keypair );
+			let shared_secret = nacl.box.before( server_pk , user_keypair.secretKey );
+			// console.log( shared_secret );
+			let shared_secret_base64 = uint8_array_to_base64( shared_secret );
+			// console.log( shared_secret_base64 );
+
+			// 3.) Encrypt User Data with Shared-Secret
+			let user_encrypted = secret_box_encrypt( user.blank , shared_secret );
+			// console.log( user_encrypted );
 
 			// 4.) Post Encrypted User Data to Server
-			post_new_user( { "w": user_encrypted , "u": user.blank.uuid , "ct": convert_bytes_to_hex_string( ct ) } );
+			post_new_user( { "w": user_encrypted , "u": user.blank.uuid , "ct": shared_secret_base64 } );
 			// console.log( user_encrypted );
 
 

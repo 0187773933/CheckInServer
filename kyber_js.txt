@@ -66,3 +66,16 @@ esbuild index.js --bundle --format=iife --global-name=Kyber --outfile=crystals-k
 npx babel crystals-kyber-modern.js --out-file crystals-kyber-legacy.js
 
 	Uncaught ReferenceError: assignment to undeclared variable KeyGen512
+
+
+
+==========
+https://github.com/akdavis83/Crystals-kyber-Library
+
+npx esbuild src/ml-kem.ts \
+  --bundle \
+  --format=iife \
+  --target=esnext \
+  --minify \
+  --global-name=Kyber \
+  --outfile=dist/kyber.js

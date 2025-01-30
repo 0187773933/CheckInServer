@@ -3,17 +3,23 @@ package routes
 import (
 	"fmt"
 	"time"
-	hex "encoding/hex"
+	// hex "encoding/hex"
+	base64 "encoding/base64"
 	fiber "github.com/gofiber/fiber/v2"
 	server "github.com/0187773933/GO_SERVER/v1/server"
 	encryption "github.com/0187773933/encryption/v1/encryption"
 	rate_limiter "github.com/gofiber/fiber/v2/middleware/limiter"
 )
 
-var KyberPrivate [3168]byte
-var KyberPublic [1568]byte
-var KyberPrivateString string
-var KyberPublicString string
+// var KyberPrivate [3168]byte
+// var KyberPublic [1568]byte
+// var KyberPrivateString string
+// var KyberPublicString string
+
+var X25519Private [32]byte
+var X25519Public [32]byte
+var X25519PrivateB64String string
+var X25519PublicB64String string
 
 func PublicMaxedOut( c *fiber.Ctx ) error {
 	ip_address := c.IP()
@@ -94,9 +100,13 @@ func SetupAdminRoutes( s *server.Server ) {
 	})
 	admin.Use( s.ValidateAdminMW )
 
- 	KyberPublic , KyberPrivate = encryption.KyberGenerateKeyPair()
-	KyberPrivateString = hex.EncodeToString( KyberPrivate[ : ] )
-	KyberPublicString = hex.EncodeToString( KyberPublic[ : ] )
+ 	// KyberPublic , KyberPrivate = encryption.KyberGenerateKeyPair()
+	// KyberPrivateString = hex.EncodeToString( KyberPrivate[ : ] )
+	// KyberPublicString = hex.EncodeToString( KyberPublic[ : ] )
+
+	X25519Public , X25519Private = encryption.CurveX25519GenerateKeyPair()
+	X25519PrivateB64String = base64.StdEncoding.EncodeToString( X25519Private[ : ] )
+	X25519PublicB64String = base64.StdEncoding.EncodeToString( X25519Public[ : ] )
 
 	admin.Get( "/user/new" , UserNewForm( s ) ) // returns new user form html
 	admin.Get( "/user/blank" , UserBlank( s ) ) // returns blank new user , un-saved
