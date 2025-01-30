@@ -1,6 +1,7 @@
 package main
 
 import (
+	// "fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -35,6 +36,7 @@ func SetupCloseHandler() {
 
 func main() {
 	config := server_utils.GetConfig()
+
 	// utils.GenerateNewKeysWrite( &config )
 	utils.SetLocation( config.TimeZone )
 	defer server_utils.SetupStackTraceReport()

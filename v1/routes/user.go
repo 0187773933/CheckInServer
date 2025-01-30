@@ -6,9 +6,11 @@ import (
 	// hex "encoding/hex"
 	json "encoding/json"
 	sha256 "crypto/sha256"
-    hkdf "golang.org/x/crypto/hkdf"
+	hkdf "golang.org/x/crypto/hkdf"
+	// uuid "github.com/satori/go.uuid"
 	// base64 "encoding/base64"
 	bolt "github.com/boltdb/bolt"
+	bleve "github.com/blevesearch/bleve/v2"
 	secretbox "golang.org/x/crypto/nacl/secretbox"
 	fiber "github.com/gofiber/fiber/v2"
 	user "github.com/0187773933/CheckInServer/v1/user"
@@ -55,11 +57,53 @@ func UserBlank( s *server.Server ) fiber.Handler {
 	}
 }
 
+type BleveUser struct {
+	UUID  string `json:"uuid"`
+	Username  string `json:"username"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+}
+
+func NewBleveUserIndex( index_path string ) ( bleve.Index ) {
+	// Define mapping for User type
+	mapping := bleve.NewIndexMapping()
+	docMapping := bleve.NewDocumentMapping()
+
+	// Create field mappings
+	textFieldMapping := bleve.NewTextFieldMapping()
+	textFieldMapping.Store = true
+	textFieldMapping.IncludeInAll = true
+
+	// Add field mappings to document mapping
+	docMapping.AddFieldMappingsAt( "username" , textFieldMapping)
+	docMapping.AddFieldMappingsAt( "first_name" , textFieldMapping )
+	docMapping.AddFieldMappingsAt( "last_name" , textFieldMapping )
+
+	// Add document mapping to index
+	mapping.AddDocumentMapping("user", docMapping)
+
+	// Create or open index
+	index, err := bleve.New(index_path, mapping)
+	if err != nil {
+		// If index exists, try to open it
+		if err == bleve.ErrorIndexPathExists {
+			index, err = bleve.Open( index_path )
+			if err != nil {
+				return nil
+			}
+		} else {
+			return nil
+		}
+	}
+
+	return index
+}
+
 func deriveKey( sharedSecret []byte ) []byte {
-    hkdfReader := hkdf.New( sha256.New , sharedSecret , nil , nil )
-    derivedKey := make( []byte , 32 )
-    io.ReadFull( hkdfReader , derivedKey )
-    return derivedKey
+	hkdfReader := hkdf.New( sha256.New , sharedSecret , nil , nil )
+	derivedKey := make( []byte , 32 )
+	io.ReadFull( hkdfReader , derivedKey )
+	return derivedKey
 }
 
 func UserEdit( s *server.Server ) fiber.Handler {
@@ -120,6 +164,22 @@ func UserEdit( s *server.Server ) fiber.Handler {
 		}
 		var decrypted_user user.User
 		json.Unmarshal( decrypted_user_json , &decrypted_user )
+		fmt.Println( decrypted_user )
+
+		// update bleve index
+		bleve_index := NewBleveUserIndex( s.Config.MiscMap[ "bleve_path" ] )
+		defer bleve_index.Close()
+		user1 := BleveUser{
+			UUID: decrypted_user.UUID ,
+			Username: decrypted_user.Username ,
+		}
+		if len( decrypted_user.FamilyMembers ) > 0 {
+			user1.FirstName = decrypted_user.FamilyMembers[ 0 ].FirstName
+			user1.LastName = decrypted_user.FamilyMembers[ 0 ].LastName
+		}
+		fmt.Println( "updating bleve index with" )
+		fmt.Println( user1 )
+
 		db_result := s.DB.Update( func( tx *bolt.Tx ) error {
 			users_blank := tx.Bucket( []byte( "users-blank" ) )
 			derived_key_encrypted := encryption.ChaChaEncryptBytes( s.Config.Creds.EncryptionKey , derived_key )
