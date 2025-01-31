@@ -310,17 +310,22 @@ func UserSearch( s *server.Server ) fiber.Handler {
 func UserGetByBarcode( s *server.Server ) fiber.Handler {
 	return func( c *fiber.Ctx ) error {
 		barcode := c.Params( "barcode" )
+		fmt.Println( "searching for barcode" , barcode )
 		var matched_user user.User
 		s.DB.View( func( tx *bolt.Tx ) error {
 			users_barcodes := tx.Bucket( []byte( "users-barcodes" ) )
 			user_uuid := users_barcodes.Get( []byte( barcode ) )
+			if user_uuid == nil {
+				return nil
+			}
+			fmt.Println( "found user" , string( user_uuid ) )
 			users_blank := tx.Bucket( []byte( "users-blank" ) )
 			users_bucket := tx.Bucket( []byte( "users" ) )
-			users_key_encrypted := users_blank.Get( []byte( user_uuid ) )
+			users_key_encrypted := users_blank.Get( user_uuid )
 			users_key_decrypted := encryption.ChaChaDecryptBytes( s.Config.Creds.EncryptionKey , users_key_encrypted )
 			var users_key_32 [ 32 ]byte
 			copy( users_key_32[ : ] , users_key_decrypted )
-			encrypted_user_b64 := users_bucket.Get( []byte( user_uuid ) )
+			encrypted_user_b64 := users_bucket.Get( user_uuid )
 			encrypted_user_bytes := utils.ConvertB64StringToBytes( string( encrypted_user_b64 ) )
 			var nonce [ 24 ]byte
 			copy( nonce[ : ] , encrypted_user_bytes[ 0 : 24 ] )
@@ -328,6 +333,7 @@ func UserGetByBarcode( s *server.Server ) fiber.Handler {
 			json.Unmarshal( decrypted_user_json , &matched_user )
 			return nil
 		})
+		fmt.Println( matched_user )
 		return c.JSON( fiber.Map{
 			"user": matched_user ,
 		})
