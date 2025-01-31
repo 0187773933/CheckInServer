@@ -179,6 +179,12 @@ func UserEdit( s *server.Server ) fiber.Handler {
 			derived_key_encrypted := encryption.ChaChaEncryptBytes( s.Config.Creds.EncryptionKey , derived_key )
 			users_blank.Put( []byte( decrypted_user.UUID ) , derived_key_encrypted )
 			users_bucket , _ := tx.CreateBucketIfNotExists( []byte( "users" ) )
+			if len( decrypted_user.Barcodes ) > 0 {
+				barcodes_bucket , _ := tx.CreateBucketIfNotExists( []byte( "users-barcodes" ) )
+				for _ , barcode := range decrypted_user.Barcodes {
+					barcodes_bucket.Put( []byte( barcode ) , []byte( decrypted_user.UUID ) )
+				}
+			}
 			users_bucket.Put( []byte( decrypted_user.UUID ) , []byte( encrypted_user_b64_string ) )
 			return nil
 		})
@@ -289,6 +295,33 @@ func UserSearch( s *server.Server ) fiber.Handler {
 		})
 		return c.JSON( fiber.Map{
 			"users": matched_users ,
+		})
+	}
+}
+
+func UserGetByBarcode( s *server.Server ) fiber.Handler {
+	return func( c *fiber.Ctx ) error {
+		barcode := c.Params( "barcode" )
+		var matched_user user.User
+		s.DB.View( func( tx *bolt.Tx ) error {
+			users_barcodes := tx.Bucket( []byte( "users-barcodes" ) )
+			user_uuid := users_barcodes.Get( []byte( barcode ) )
+			users_blank := tx.Bucket( []byte( "users-blank" ) )
+			users_bucket := tx.Bucket( []byte( "users" ) )
+			users_key_encrypted := users_blank.Get( []byte( user_uuid ) )
+			users_key_decrypted := encryption.ChaChaDecryptBytes( s.Config.Creds.EncryptionKey , users_key_encrypted )
+			var users_key_32 [ 32 ]byte
+			copy( users_key_32[ : ] , users_key_decrypted )
+			encrypted_user_b64 := users_bucket.Get( []byte( user_uuid ) )
+			encrypted_user_bytes := utils.ConvertB64StringToBytes( string( encrypted_user_b64 ) )
+			var nonce [ 24 ]byte
+			copy( nonce[ : ] , encrypted_user_bytes[ 0 : 24 ] )
+			decrypted_user_json , _ := secretbox.Open( nil , encrypted_user_bytes[ 24 : ] , &nonce , &users_key_32 )
+			json.Unmarshal( decrypted_user_json , &matched_user )
+			return nil
+		})
+		return c.JSON( fiber.Map{
+			"user": matched_user ,
 		})
 	}
 }
