@@ -229,6 +229,7 @@ func UserGet( s *server.Server ) fiber.Handler {
 		}
 		return c.JSON( fiber.Map{
 			"user": decrypted_user ,
+			"pk": X25519PublicB64String ,
 		})
 	}
 }

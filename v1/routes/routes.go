@@ -111,6 +111,7 @@ func SetupAdminRoutes( s *server.Server ) {
 	admin.Get( "/user/new" , UserNewForm( s ) ) // returns new user form html
 	admin.Get( "/user/blank" , UserBlank( s ) ) // returns blank new user , un-saved
 	admin.Post( "/user/edit" , UserEdit( s ) )
+	admin.Get( "/user/edit/:uuid" , UserEditForm( s ) )
 	admin.Get( "/user/get/:uuid" , UserGet( s ) )
 	admin.Get( "/user/get/barcode/:barcode" , UserGetByBarcode( s ) )
 	admin.Get( "/user/search/:search_term" , UserSearch( s ) )
