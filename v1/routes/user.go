@@ -33,6 +33,13 @@ func UserEditForm( s *server.Server ) fiber.Handler {
 	}
 }
 
+func UserCheckInForm( s *server.Server ) fiber.Handler {
+	return func( c *fiber.Ctx ) error {
+		c.Set( "Content-Type" , "text/html" )
+		return c.SendFile( "./v1/html/admin/user_checkin.html" )
+	}
+}
+
 func UserBlank( s *server.Server ) fiber.Handler {
 	return func( c *fiber.Ctx ) error {
 		temp_key := encryption.SecretBoxGenerateRandomKey()
@@ -323,6 +330,16 @@ func UserGetByBarcode( s *server.Server ) fiber.Handler {
 		})
 		return c.JSON( fiber.Map{
 			"user": matched_user ,
+		})
+	}
+}
+
+func UserCheckIn( s *server.Server ) fiber.Handler {
+	return func( c *fiber.Ctx ) error {
+		// barcode := c.Params( "barcode" )
+		// TODO : print probably , etc
+		return c.JSON( fiber.Map{
+			"result": true ,
 		})
 	}
 }

@@ -108,10 +108,12 @@ func SetupAdminRoutes( s *server.Server ) {
 	X25519PublicB64String = base64.StdEncoding.EncodeToString( X25519Public[ : ] )
 	X25519PrivateB64String = base64.StdEncoding.EncodeToString( X25519Private[ : ] )
 
-	admin.Get( "/user/new" , UserNewForm( s ) ) // returns new user form html
-	admin.Get( "/user/blank" , UserBlank( s ) ) // returns blank new user , un-saved
+	admin.Get( "/user/new" , UserNewForm( s ) )
+	admin.Get( "/user/blank" , UserBlank( s ) )
+	admin.Get( "/user/checkin" , UserCheckInForm( s ) )
+	admin.Post( "/user/checkin" , UserCheckIn( s ) )
 	admin.Post( "/user/edit" , UserEdit( s ) )
-	admin.Get( "/user/edit/:uuid" , UserEditForm( s ) )
+	admin.Get( "/user/edit/:uuid" , UserEditForm( s ) ) // TODO : replies with deencrypted
 	admin.Get( "/user/get/:uuid" , UserGet( s ) )
 	admin.Get( "/user/get/barcode/:barcode" , UserGetByBarcode( s ) )
 	admin.Get( "/user/search/:search_term" , UserSearch( s ) )
