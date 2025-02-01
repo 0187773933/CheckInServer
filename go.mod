@@ -3,12 +3,13 @@ module github.com/0187773933/CheckInServer
 go 1.22.2
 
 require (
-	github.com/0187773933/GO_SERVER v1.1.16
-	github.com/0187773933/Logger v1.1.12
+	github.com/0187773933/GO_SERVER v1.1.17
+	github.com/0187773933/Logger v1.1.16
 	github.com/0187773933/encryption v1.0.11
 	github.com/blevesearch/bleve/v2 v2.4.4
 	github.com/boltdb/bolt v1.3.1
 	github.com/gofiber/fiber/v2 v2.52.6
+	github.com/jung-kurt/gofpdf v1.16.2
 	github.com/satori/go.uuid v1.2.0
 	golang.org/x/crypto v0.32.0
 )

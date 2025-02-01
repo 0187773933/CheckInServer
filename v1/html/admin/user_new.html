@@ -127,8 +127,8 @@
 			<label for="family_size">Family Size:</label>
 			<input type="number" id="family_size" name="family_size" value="1" min="1"><br><br>
 		</fieldset>
-
-		<button type="submit">Create User</button>
+		<br>
+		<button id="submit-button" type="submit">Create User</button>
 	</form>
 
 	<script type="text/javascript">
@@ -298,29 +298,50 @@
 				catch( error ) { console.log( error ); resolve( false ); return; }
 			});
 		}
+		function _on_submit() {
+			return new Promise( async function( resolve , reject ) {
+				try {
+					let user = await get_blank_user();
+					user.blank.username = document.getElementById( "username" ).value.trim();
+					let parent = {
+						first_name: document.getElementById( "parents_first_name" ).value.trim() ,
+						last_name: document.getElementById( "parents_last_name" ).value.trim() ,
+						phone_number: document.getElementById( "phone_number" ).value.trim() ,
+						email_address: document.getElementById( "email_address" ).value.trim() ,
+					}
+					let barcode = document.getElementById( "barcode" ).value.trim();
+					if ( barcode.length > 0 ) {
+						user.blank.barcodes = [];
+						user.blank.barcodes.push( barcode );
+					}
+					user.blank.family_members = [];
+					user.blank.family_members.push( parent );
+					user.blank.family_size = parseInt( document.getElementById( "family_size" ).value.trim() );
+					await _post( user );
+					alert( "new user created" );
+					this.reset();
+					document.getElementById( "username" ).focus();
+					resolve( true );
+					return;
+				}
+				catch( error ) { console.log( error ); resolve( false ); return; }
+			});
+		}
 
 		( ()=> {
+
 			document.getElementById( "new-user-form" ).addEventListener( "submit" , async function ( event ) {
 				event.preventDefault();
-				let user = await get_blank_user();
-				user.blank.username = document.getElementById( "username" ).value.trim();
-				let parent = {
-					first_name: document.getElementById( "parents_first_name" ).value.trim() ,
-					last_name: document.getElementById( "parents_last_name" ).value.trim() ,
-					phone_number: document.getElementById( "phone_number" ).value.trim() ,
-					email_address: document.getElementById( "email_address" ).value.trim() ,
-				}
-				let barcode = document.getElementById( "barcode" ).value.trim();
-				if ( barcode.length > 0 ) {
-					user.blank.barcodes = [];
-					user.blank.barcodes.push( barcode );
-				}
-				user.blank.family_members = [];
-				user.blank.family_members.push( parent );
-				user.blank.family_size = parseInt( document.getElementById( "family_size" ).value.trim() );
-				await _post( user );
-				alert( "new user created" );
+				await _on_submit();
 			});
+
+            document.addEventListener( "keypress" , function( event ) {
+                if ( event.key === "Enter" ) {
+                    event.preventDefault();
+                    document.getElementById( "submit-button" ).click();
+                }
+            });
+
 		})();
 	</script>
 </body>

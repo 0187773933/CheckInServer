@@ -8,15 +8,8 @@ import (
 )
 
 type CheckIn struct {
-	UUID string `json:"uuid"`
-	Name string `json:"name"`
-	ULID string `json:"ULID"`
 	Date string `json:"date"`
 	Time string `json:"time"`
-	Type string `json:"type"`
-	Result bool `json:"result"`
-	TimeRemaining int `json:"time_remaining"`
-	// PrintJob printer.PrintJob `json:"print_job"`
 }
 
 // type FailedCheckIn struct {

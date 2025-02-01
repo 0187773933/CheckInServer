@@ -93,6 +93,7 @@
 		function is_barcode(str) { return barcode_regex.test(str); }
 
 		function populate_form(user) {
+			window.ACTIVE_USER = user;
 			document.getElementById("form_barcode").value = user.barcodes?.[0] || '';
 			document.getElementById("username").value = user.username || '';
 			if (user.family_members?.[0]) {
@@ -251,12 +252,10 @@
 				catch( error ) { console.log( error ); resolve( false ); return; }
 			});
 		}
-		function post_check_in( user ) {
+		function post_check_in( uuid ) {
 			return new Promise( function( resolve , reject ) {
 				try {
-					var current_url = window.location.href;
-					var url = current_url.replace( /\/new$/ , "/edit" );
-					url = url.replace( /\/edit\/[0-9a-fA-F-]+$/ , "/edit" );
+					var url = window.location.href;
 					var xhr = new XMLHttpRequest();
 					xhr.open( "POST" , url , false );
 					xhr.setRequestHeader( "Content-Type" , "application/json" );
@@ -276,7 +275,7 @@
 						resolve( false );
 						return;
 					};
-					var data = JSON.stringify( user );
+					var data = JSON.stringify( { "uuid": uuid } );
 					xhr.send( data );
 				}
 				catch( error ) { console.log( error ); resolve( false ); return; }
@@ -341,7 +340,7 @@
 						family_size: parseInt(document.getElementById("family_size").value.trim())
 					};
 
-					const success = await post_check_in(user);
+					const success = await post_check_in( window.ACTIVE_USER.uuid );
 					if (success) {
 						alert("User checked in successfully!");
 						checkin_form.reset();
