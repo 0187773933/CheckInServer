@@ -165,6 +165,7 @@ func UserEdit( s *server.Server ) fiber.Handler {
 		}
 		var decrypted_user user.User
 		json.Unmarshal( decrypted_user_json , &decrypted_user )
+		fmt.Println( "new user with username" , decrypted_user.Username )
 		fmt.Println( decrypted_user )
 
 		// update bleve index
@@ -375,7 +376,8 @@ func UserCheckIn( s *server.Server ) fiber.Handler {
 			decrypted_user_json , _ := secretbox.Open( nil , encrypted_user_bytes[ 24 : ] , &nonce , &users_key_32 )
 			var decrypted_user user.User
 			json.Unmarshal( decrypted_user_json , &decrypted_user )
-			print_string := decrypted_user.Username
+			fmt.Println( decrypted_user )
+			print_string = decrypted_user.Username
 
 			// check-in
 			now := utils.GetNowTimeOBJ()

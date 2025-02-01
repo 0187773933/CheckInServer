@@ -173,7 +173,7 @@ func PrintLinux( printer_name string , pdf_file_path string ) {
 	fmt.Println( "todo" )
 }
 
-func Print( printer_name string , font_path , childs_name string ) {
+func Print( printer_name string , font_path string , name string ) {
 
 	page_width := 2.25
 	page_heigth := 4.0
@@ -205,7 +205,7 @@ func Print( printer_name string , font_path , childs_name string ) {
 	// font_abs_path , _ := filepath.Abs( font_path )
 	pdf.AddUTF8Font( "ComicNeue" , "" , "./v1/printer/ComicNeue-Regular.ttf" )
 
-	add_rotated_centered_text( pdf , childs_name , "ComicNeue" , 30 , ( ( page_center_x - ( page_center_x / 2 ) ) + ( page_center_x / 4 ) ) )
+	add_rotated_centered_text( pdf , name , "ComicNeue" , 30 , ( ( page_center_x - ( page_center_x / 2 ) ) + ( page_center_x / 4 ) ) )
 	// add_rotated_image( pdf , "icon.png" , ( page_center_x - icon_center_x - 0.1 ) , ( page_center_y + icon_center_y ) , icon_size_x , icon_size_y , 90 )
 	add_rotated_image( pdf , "./v1/printer/icon.png" , ( page_center_x - icon_center_x - 0.1 ) , ( page_heigth - 1.1 ) , icon_size_x , icon_size_y , 90 )
 	add_rotated_image( pdf , "./v1/printer/logo.png" , ( page_center_x - ( logo_size_y ) ) , ( ( page_center_y - logo_center_y ) - 0.3 ) , logo_size_x , logo_size_y , 90 )
@@ -233,5 +233,7 @@ func Print( printer_name string , font_path , childs_name string ) {
 		ClearPrintQueLinux( printer_name )
 		PrintLinux( printer_name , pdf_temp_file_path )
 	}
+
+	fmt.Println( "printed ticket for" , name )
 
 }

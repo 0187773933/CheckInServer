@@ -302,7 +302,9 @@
 			return new Promise( async function( resolve , reject ) {
 				try {
 					let user = await get_blank_user();
+					console.log( user );
 					user.blank.username = document.getElementById( "username" ).value.trim();
+					console.log( user );
 					let parent = {
 						first_name: document.getElementById( "parents_first_name" ).value.trim() ,
 						last_name: document.getElementById( "parents_last_name" ).value.trim() ,
@@ -317,9 +319,10 @@
 					user.blank.family_members = [];
 					user.blank.family_members.push( parent );
 					user.blank.family_size = parseInt( document.getElementById( "family_size" ).value.trim() );
+					console.log( user );
 					await _post( user );
 					alert( "new user created" );
-					this.reset();
+					document.getElementById( "new-user-form" ).reset();
 					document.getElementById( "username" ).focus();
 					resolve( true );
 					return;
