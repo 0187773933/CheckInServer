@@ -118,4 +118,5 @@ func SetupAdminRoutes( s *server.Server ) {
 	admin.Get( "/user/get/barcode/:barcode" , UserGetByBarcode( s ) )
 	admin.Get( "/user/search/:search_term" , UserSearch( s ) )
 	// admin.Post( "/user/delete" , UserDelete( s ) )
+	admin.Get( "/checkins/:date" , GetCheckInsOnDate( s ) )
 }

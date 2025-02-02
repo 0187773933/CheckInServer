@@ -3,6 +3,7 @@ package routes
 import (
 	"fmt"
 	"strings"
+	"time"
 	"crypto/rand"
 	"io"
 	// hex "encoding/hex"
@@ -413,6 +414,60 @@ func UserCheckIn( s *server.Server ) fiber.Handler {
 		return c.JSON( fiber.Map{
 			"result": true ,
 			"check_in": check_in ,
+		})
+	}
+}
+
+// TODO move , to file
+type CheckInResult struct {
+	Username string `json:"username"`
+	UUID string `json:"uuid"`
+	Parents string `json:"parents"`
+}
+func GetCheckInsOnDate( s *server.Server ) fiber.Handler {
+	return func( c *fiber.Ctx ) error {
+		date_string := c.Params( "date" )
+		date , _ := time.Parse( "02Jan2006" , date_string )
+
+		var check_in_results []CheckInResult
+		s.DB.View( func( tx *bolt.Tx ) error {
+
+			users_bucket := tx.Bucket( []byte( "users" ) )
+			users_blank := tx.Bucket( []byte( "users-blank" ) )
+			users_blank.ForEach( func( k , v []byte ) error {
+
+				users_key_decrypted := encryption.ChaChaDecryptBytes( s.Config.Creds.EncryptionKey , v )
+				var users_key_32 [ 32 ]byte
+				copy( users_key_32[ : ] , users_key_decrypted )
+				encrypted_user_b64 := users_bucket.Get( k )
+				encrypted_user_bytes := utils.ConvertB64StringToBytes( string( encrypted_user_b64 ) )
+				var nonce [ 24 ]byte
+				copy( nonce[ : ] , encrypted_user_bytes[ 0 : 24 ] )
+				decrypted_user_json , _ := secretbox.Open( nil , encrypted_user_bytes[ 24 : ] , &nonce , &users_key_32 )
+				var decrypted_user user.User
+				json.Unmarshal( decrypted_user_json , &decrypted_user )
+
+				if len( decrypted_user.CheckIns ) < 1 { return nil }
+				for _ , check_in := range decrypted_user.CheckIns {
+					check_in_date , _ := time.Parse( "02Jan2006" , check_in.Date )
+					if check_in_date != date { continue }
+					var check_in_result CheckInResult
+					check_in_result.Username = decrypted_user.Username
+					check_in_result.UUID = decrypted_user.UUID
+					if len( decrypted_user.FamilyMembers ) > 0 {
+						check_in_result.Parents = decrypted_user.FamilyMembers[ 0 ].FirstName + " " + decrypted_user.FamilyMembers[ 0 ].LastName
+					}
+					check_in_results = append( check_in_results , check_in_result )
+				}
+
+				return nil
+			})
+			return nil
+		})
+
+		return c.JSON( fiber.Map{
+			"date": date ,
+			"checkins": check_in_results ,
 		})
 	}
 }
