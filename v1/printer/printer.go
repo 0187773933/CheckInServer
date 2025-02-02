@@ -188,7 +188,7 @@ func Print( printer_name string , font_path string , name string ) {
 	icon_center_y := ( icon_size_y / 2 )
 	fmt.Printf( "Icon Center X === %v || Icon Center Y === %v\n" , icon_center_x , icon_center_y )
 
-	logo_scale_factor := 0.4
+	logo_scale_factor := 0.6
 	logo_size_x := ( ( 300 / 96 ) * logo_scale_factor )
 	logo_size_y := ( ( 156 / 96 ) * logo_scale_factor )
 	logo_center_x := ( logo_size_x / 2 )
@@ -205,9 +205,9 @@ func Print( printer_name string , font_path string , name string ) {
 	// font_abs_path , _ := filepath.Abs( font_path )
 	pdf.AddUTF8Font( "ComicNeue" , "" , "./v1/printer/ComicNeue-Regular.ttf" )
 
-	add_rotated_centered_text( pdf , name , "ComicNeue" , 30 , ( ( page_center_x - ( page_center_x / 2 ) ) + ( page_center_x / 4 ) ) )
+	add_rotated_centered_text( pdf , name , "ComicNeue" , 40 , ( ( page_center_x - ( page_center_x / 2 ) ) + ( page_center_x / 4 ) ) )
 	// add_rotated_image( pdf , "icon.png" , ( page_center_x - icon_center_x - 0.1 ) , ( page_center_y + icon_center_y ) , icon_size_x , icon_size_y , 90 )
-	add_rotated_image( pdf , "./v1/printer/icon.png" , ( page_center_x - icon_center_x - 0.1 ) , ( page_heigth - 1.1 ) , icon_size_x , icon_size_y , 90 )
+	// add_rotated_image( pdf , "./v1/printer/icon.png" , ( page_center_x - icon_center_x - 0.1 ) , ( page_heigth - 1.1 ) , icon_size_x , icon_size_y , 90 )
 	add_rotated_image( pdf , "./v1/printer/logo.png" , ( page_center_x - ( logo_size_y ) ) , ( ( page_center_y - logo_center_y ) - 0.3 ) , logo_size_x , logo_size_y , 90 )
 
 	pdf_temp_file , _ := ioutil.TempFile( "" , "ticket-*.pdf" )

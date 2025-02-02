@@ -3,8 +3,8 @@ module github.com/0187773933/CheckInServer
 go 1.22.2
 
 require (
-	github.com/0187773933/GO_SERVER v1.1.17
-	github.com/0187773933/Logger v1.1.16
+	github.com/0187773933/GO_SERVER v1.1.18
+	github.com/0187773933/Logger v1.1.18
 	github.com/0187773933/encryption v1.0.11
 	github.com/blevesearch/bleve/v2 v2.4.4
 	github.com/boltdb/bolt v1.3.1

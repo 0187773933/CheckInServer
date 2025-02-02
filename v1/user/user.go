@@ -3,8 +3,7 @@ package user
 import (
 	// "fmt"
 	uuid "github.com/satori/go.uuid"
-	// server "github.com/0187773933/GO_SERVER/v1/server"
-	utils "github.com/0187773933/CheckInServer/v1/utils"
+	server "github.com/0187773933/GO_SERVER/v1/server"
 )
 
 type CheckIn struct {
@@ -75,13 +74,13 @@ type User struct {
 	ECB string `json:"ecb"`
 }
 
-func New() ( new_user User ) {
-	now := utils.GetNowTimeOBJ()
+func New( s *server.Server ) ( new_user User ) {
+	now := s.LOG.GetNowTimeOBJ()
 	new_user.Username = ""
 	new_user.Verified = false
 	new_user.UUID = uuid.NewV4().String()
 	new_user.FamilySize = 1
-	new_user.CreatedDate = utils.GetNowDateString( &now )
-	new_user.CreatedTime = utils.GetNowTimeString( &now )
+	new_user.CreatedDate = s.LOG.FormatDateString( &now )
+	new_user.CreatedTime = s.LOG.FormatTimeString( &now )
 	return
 }

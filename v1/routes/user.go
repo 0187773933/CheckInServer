@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"crypto/rand"
+	"io"
 	// hex "encoding/hex"
 	filepath "path/filepath"
 	json "encoding/json"
@@ -24,28 +25,40 @@ import (
 func UserNewForm( s *server.Server ) fiber.Handler {
 	return func( c *fiber.Ctx ) error {
 		c.Set( "Content-Type" , "text/html" )
-		return c.SendFile( "./v1/html/admin/user_new.html" )
+		file_path := "html/admin/user_new.html"
+		file , _ := s.EMBEDED.Open( file_path )
+		defer file.Close()
+		content , _ := io.ReadAll( file )
+		return c.SendString( string( content ) )
 	}
 }
 
 func UserEditForm( s *server.Server ) fiber.Handler {
 	return func( c *fiber.Ctx ) error {
 		c.Set( "Content-Type" , "text/html" )
-		return c.SendFile( "./v1/html/admin/user_edit.html" )
+		file_path := "html/admin/user_edit.html"
+		file , _ := s.EMBEDED.Open( file_path )
+		defer file.Close()
+		content , _ := io.ReadAll( file )
+		return c.SendString( string( content ) )
 	}
 }
 
 func UserCheckInForm( s *server.Server ) fiber.Handler {
 	return func( c *fiber.Ctx ) error {
 		c.Set( "Content-Type" , "text/html" )
-		return c.SendFile( "./v1/html/admin/user_checkin.html" )
+		file_path := "html/admin/user_checkin.html"
+		file , _ := s.EMBEDED.Open( file_path )
+		defer file.Close()
+		content , _ := io.ReadAll( file )
+		return c.SendString( string( content ) )
 	}
 }
 
 func UserBlank( s *server.Server ) fiber.Handler {
 	return func( c *fiber.Ctx ) error {
 		temp_key := encryption.SecretBoxGenerateRandomKey()
-		temp_user := user.New()
+		temp_user := user.New( s )
 		db_result := s.DB.Update( func( tx *bolt.Tx ) error {
 			users_blank_bucket , _ := tx.CreateBucketIfNotExists( []byte( "users-blank" ) )
 			users_blank_bucket.Put( []byte( temp_user.UUID ) , temp_key[ : ] )
@@ -380,9 +393,9 @@ func UserCheckIn( s *server.Server ) fiber.Handler {
 			print_string = decrypted_user.Username
 
 			// check-in
-			now := utils.GetNowTimeOBJ()
-			check_in.Date = utils.GetNowDateString( &now )
-			check_in.Time = utils.GetNowTimeString( &now )
+			now := s.LOG.GetNowTimeOBJ()
+			check_in.Date = s.LOG.FormatDateString( &now )
+			check_in.Time = s.LOG.FormatTimeString( &now )
 			decrypted_user.CheckIns = append( decrypted_user.CheckIns , check_in )
 
 			var new_nonce [ 24 ]byte
@@ -395,6 +408,7 @@ func UserCheckIn( s *server.Server ) fiber.Handler {
 			fmt.Println( "Checked In" , print_string )
 			return nil
 		})
+		printer.Print( s.Config.MiscMap[ "printer_name" ] , s.Config.MiscMap[ "font_path" ] , print_string )
 		printer.Print( s.Config.MiscMap[ "printer_name" ] , s.Config.MiscMap[ "font_path" ] , print_string )
 		return c.JSON( fiber.Map{
 			"result": true ,
