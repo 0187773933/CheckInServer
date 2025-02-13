@@ -328,7 +328,7 @@ func UserEdit(s *server.Server) fiber.Handler {
 		// (We use the Identity field as the primary account.)
 		mainIndex := BleveUser{
 			ID:        decryptedUser.UUID,
-			Username:  decryptedUser.Username,
+			// Username:  decryptedUser.Username,
 			FirstName: decryptedUser.Identity.FirstName,
 			LastName:  decryptedUser.Identity.LastName,
 		}
@@ -340,7 +340,7 @@ func UserEdit(s *server.Server) fiber.Handler {
 		if decryptedUser.Spouse.FirstName != "" || decryptedUser.Spouse.LastName != "" {
 			spouseIndex := BleveUser{
 				ID:        decryptedUser.Spouse.UUID,
-				Username:  decryptedUser.Spouse.FirstName + " " + decryptedUser.Spouse.LastName,
+				// Username:  decryptedUser.Spouse.FirstName + " " + decryptedUser.Spouse.LastName,
 				FirstName: decryptedUser.Spouse.FirstName,
 				LastName:  decryptedUser.Spouse.LastName,
 				ParentID:  decryptedUser.UUID,
@@ -355,7 +355,7 @@ func UserEdit(s *server.Server) fiber.Handler {
 			if child.FirstName != "" {
 				childIndex := BleveUser{
 					ID:        child.UUID,
-					Username:  child.FirstName + " " + child.LastName,
+					// Username:  child.FirstName + " " + child.LastName,
 					FirstName: child.FirstName,
 					LastName:  child.LastName,
 					ParentID:  decryptedUser.UUID,
@@ -510,9 +510,9 @@ func UserSearch(s *server.Server) fiber.Handler {
 
 		for _, word := range words {
 			// Search in username
-			usernameQuery := bleve.NewFuzzyQuery(word)
-			usernameQuery.SetField("username")
-			usernameQuery.Fuzziness = 1
+			// usernameQuery := bleve.NewFuzzyQuery(word)
+			// usernameQuery.SetField("username")
+			// usernameQuery.Fuzziness = 1
 
 			// Search in first_name
 			firstNameQuery := bleve.NewFuzzyQuery(word)
@@ -525,19 +525,19 @@ func UserSearch(s *server.Server) fiber.Handler {
 			lastNameQuery.Fuzziness = 1
 
 			// Optionally, search in spouse_name (if you index spouse's full name in this field)
-			spouseNameQuery := bleve.NewFuzzyQuery(word)
-			spouseNameQuery.SetField("spouse_name")
-			spouseNameQuery.Fuzziness = 1
+			// spouseNameQuery := bleve.NewFuzzyQuery(word)
+			// spouseNameQuery.SetField("spouse_name")
+			// spouseNameQuery.Fuzziness = 1
 
-			mainQuery.AddQuery(usernameQuery)
+			// mainQuery.AddQuery(usernameQuery)
 			mainQuery.AddQuery(firstNameQuery)
 			mainQuery.AddQuery(lastNameQuery)
-			mainQuery.AddQuery(spouseNameQuery)
+			// mainQuery.AddQuery(spouseNameQuery)
 		}
 
 		searchRequest := bleve.NewSearchRequest(mainQuery)
 		// Request fields that you need to build your user object.
-		searchRequest.Fields = []string{"username", "first_name", "last_name", "spouse_name"}
+		searchRequest.Fields = []string{"first_name", "last_name", "parent_id"}
 
 		searchResults, err := bleveIndex.Search(searchRequest)
 		if err != nil {
@@ -569,7 +569,7 @@ func UserSearch(s *server.Server) fiber.Handler {
 				var key32 [32]byte
 				copy(key32[:], decryptedKey)
 
-				encryptedUserB64 := usersBucket.Get([]byte(hit.ID))
+				encryptedUserB64 := usersBucket.Get([]byte(parentID))
 				encryptedUserBytes := utils.ConvertB64StringToBytes(string(encryptedUserB64))
 				var nonce [24]byte
 				copy(nonce[:], encryptedUserBytes[0:24])
