@@ -1,7 +1,7 @@
 package user
 
 import (
-	// "fmt"
+	"fmt"
 	uuid "github.com/satori/go.uuid"
 	server "github.com/0187773933/GO_SERVER/v1/server"
 )
@@ -9,6 +9,8 @@ import (
 type CheckIn struct {
 	Date string `json:"date"`
 	Time string `json:"time"`
+	UUID string `json:"uuid"`
+	Additional []string `json:"additional"`
 }
 
 type DateOfBirth struct {
@@ -78,4 +80,11 @@ func New( s *server.Server ) ( new_user User ) {
 	new_user.CreatedDate = s.LOG.FormatDateString( &now )
 	new_user.CreatedTime = s.LOG.FormatTimeString( &now )
 	return
+}
+
+func ( user *User ) GetFamilyName() string {
+	if user.Spouse.FirstName != "" {
+		return fmt.Sprintf("%s and %s %s", user.Identity.FirstName, user.Spouse.FirstName, user.Identity.LastName)
+	}
+	return fmt.Sprintf("%s %s", user.Identity.FirstName, user.Identity.LastName)
 }

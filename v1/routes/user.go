@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	// "crypto/rand"
+	"crypto/rand"
 	"io"
 	// hex "encoding/hex"
 	filepath "path/filepath"
@@ -16,7 +16,7 @@ import (
 	secretbox "golang.org/x/crypto/nacl/secretbox"
 	fiber "github.com/gofiber/fiber/v2"
 	user "github.com/0187773933/CheckInServer/v1/user"
-	// printer "github.com/0187773933/CheckInServer/v1/printer"
+	printer "github.com/0187773933/CheckInServer/v1/printer"
 	utils "github.com/0187773933/CheckInServer/v1/utils"
 	server "github.com/0187773933/GO_SERVER/v1/server"
 	encryption "github.com/0187773933/encryption/v1/encryption"
@@ -339,15 +339,15 @@ func UserEdit(s *server.Server) fiber.Handler {
 		// Create a Bleve index entry for the Spouse (if provided).
 		if decryptedUser.Spouse.FirstName != "" || decryptedUser.Spouse.LastName != "" {
 			spouseIndex := BleveUser{
-				ID:        decryptedUser.Spouse.UUID,
+				ID:        decryptedUser.Spouse.UUID ,
 				// Username:  decryptedUser.Spouse.FirstName + " " + decryptedUser.Spouse.LastName,
-				FirstName: decryptedUser.Spouse.FirstName,
-				LastName:  decryptedUser.Spouse.LastName,
-				ParentID:  decryptedUser.UUID,
+				FirstName: decryptedUser.Spouse.FirstName ,
+				LastName:  decryptedUser.Spouse.LastName ,
+				ParentID:  decryptedUser.UUID ,
 			}
-			bleveIndex.Index(decryptedUser.Spouse.UUID, spouseIndex)
-			fmt.Println("Indexing spouse:")
-			fmt.Println(spouseIndex)
+			bleveIndex.Index( decryptedUser.Spouse.UUID , spouseIndex )
+			fmt.Println( "Indexing spouse:" )
+			fmt.Println( spouseIndex )
 		}
 
 		// Create Bleve index entries for each child.
@@ -622,10 +622,6 @@ func UserGetByBarcode( s *server.Server ) fiber.Handler {
 	}
 }
 
-type UserCheckInEntry struct {
-	UUID string `json:"uuid"`
-	Additional []string `json:"additional"`
-}
 func UserCheckIn( s *server.Server ) fiber.Handler {
 	return func( c *fiber.Ctx ) error {
 		// body := c.Body()
@@ -637,7 +633,7 @@ func UserCheckIn( s *server.Server ) fiber.Handler {
 		// 	})
 		// }
 
-		var check_in UserCheckInEntry
+		var check_in user.CheckIn
 		if err := c.BodyParser(&check_in); err != nil {
 			fmt.Println("Error parsing JSON:", err)
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -646,58 +642,67 @@ func UserCheckIn( s *server.Server ) fiber.Handler {
 		}
 		fmt.Println( check_in )
 
-		// uuid , ok := response[ "uuid" ].( string )
-		// if !ok {
-		// 	fmt.Println( "Error parsing JSON: uuid" , ok )
-		// 	return c.Status( fiber.StatusBadRequest ).JSON( fiber.Map{
-		// 		"error": "Failed to parse JSON request",
-		// 	})
-		// }
-		// print_string := ""
-		// var check_in user.CheckIn
-		// s.DB.Update( func( tx *bolt.Tx ) error {
-		// 	users_blank := tx.Bucket( []byte( "users-blank" ) )
-		// 	users_key_encrypted := users_blank.Get( []byte( uuid ) )
-		// 	users_key_decrypted := encryption.ChaChaDecryptBytes( s.Config.Creds.EncryptionKey , users_key_encrypted )
-		// 	var users_key_32 [ 32 ]byte
-		// 	copy( users_key_32[ : ] , users_key_decrypted )
-		// 	users_bucket := tx.Bucket( []byte( "users" ) )
-		// 	encrypted_user_b64 := users_bucket.Get( []byte( uuid ) )
-		// 	encrypted_user_bytes := utils.ConvertB64StringToBytes( string( encrypted_user_b64 ) )
-		// 	var nonce [ 24 ]byte
-		// 	copy( nonce[ : ] , encrypted_user_bytes[ 0 : 24 ] )
-		// 	decrypted_user_json , _ := secretbox.Open( nil , encrypted_user_bytes[ 24 : ] , &nonce , &users_key_32 )
-		// 	var decrypted_user user.User
-		// 	json.Unmarshal( decrypted_user_json , &decrypted_user )
-		// 	fmt.Println( decrypted_user )
-		// 	print_string = decrypted_user.Username
+		var print_tickets []string
+		s.DB.Update( func( tx *bolt.Tx ) error {
+			users_blank := tx.Bucket( []byte( "users-blank" ) )
+			users_key_encrypted := users_blank.Get( []byte( check_in.UUID ) )
+			users_key_decrypted := encryption.ChaChaDecryptBytes( s.Config.Creds.EncryptionKey , users_key_encrypted )
+			var users_key_32 [ 32 ]byte
+			copy( users_key_32[ : ] , users_key_decrypted )
+			users_bucket := tx.Bucket( []byte( "users" ) )
+			encrypted_user_b64 := users_bucket.Get( []byte( check_in.UUID ) )
+			encrypted_user_bytes := utils.ConvertB64StringToBytes( string( encrypted_user_b64 ) )
+			var nonce [ 24 ]byte
+			copy( nonce[ : ] , encrypted_user_bytes[ 0 : 24 ] )
+			decrypted_user_json , _ := secretbox.Open( nil , encrypted_user_bytes[ 24 : ] , &nonce , &users_key_32 )
+			var decrypted_user user.User
+			json.Unmarshal( decrypted_user_json , &decrypted_user )
+			fmt.Println( decrypted_user )
 
-		// 	// check-in
-		// 	now := s.LOG.GetNowTimeOBJ()
-		// 	check_in.Date = s.LOG.FormatDateString( &now )
-		// 	check_in.Time = s.LOG.FormatTimeString( &now )
-		// 	decrypted_user.CheckIns = append( decrypted_user.CheckIns , check_in )
+			// Make Parents Tickets
+			print_ticket_parents := decrypted_user.GetFamilyName()
+			print_tickets = append( print_tickets , print_ticket_parents )
+			// Make Included Child Tickets
+			for _ , child := range decrypted_user.Children {
+				for _ , included := range check_in.Additional {
+					if included == child.UUID {
+						var child_ticket string
+						if child.LastName == "" {
+							child_ticket = child.FirstName + " " + decrypted_user.Identity.LastName
+						} else {
+							child_ticket = child.FirstName + " " + child.LastName
+						}
+						print_tickets = append( print_tickets , child_ticket )
+					}
+				}
+			}
 
-		// 	var new_nonce [ 24 ]byte
-		// 	rand.Read( new_nonce[ : ] )
-		// 	reenrypted_user_json , _ := json.Marshal( decrypted_user )
-		// 	sealed_data := secretbox.Seal( nil , reenrypted_user_json , &new_nonce , &users_key_32 )
-		// 	reencrypted_user_bytes := append( new_nonce[ : ] , sealed_data... )
-		// 	reencrypted_user_b64 := utils.ConvertBytesToB64String( reencrypted_user_bytes )
-		// 	users_bucket.Put( []byte( uuid ) , []byte( reencrypted_user_b64 ) )
-		// 	fmt.Println( "Checked In" , print_string )
-		// 	return nil
-		// })
-		// printer.Print( s.Config.MiscMap[ "printer_name" ] , s.Config.MiscMap[ "font_path" ] , print_string )
-		// printer.Print( s.Config.MiscMap[ "printer_name" ] , s.Config.MiscMap[ "font_path" ] , print_string )
-		// return c.JSON( fiber.Map{
-		// 	"result": true ,
-		// 	"check_in": check_in ,
-		// })
+			// check-in
+			now := s.LOG.GetNowTimeOBJ()
+			check_in.Date = s.LOG.FormatDateString( &now )
+			check_in.Time = s.LOG.FormatTimeString( &now )
+			decrypted_user.CheckIns = append( decrypted_user.CheckIns , check_in )
+
+			// this is our only instance of re-encrytping i think right now
+			var new_nonce [ 24 ]byte
+			rand.Read( new_nonce[ : ] )
+			reenrypted_user_json , _ := json.Marshal( decrypted_user )
+			sealed_data := secretbox.Seal( nil , reenrypted_user_json , &new_nonce , &users_key_32 )
+			reencrypted_user_bytes := append( new_nonce[ : ] , sealed_data... )
+			reencrypted_user_b64 := utils.ConvertBytesToB64String( reencrypted_user_bytes )
+			users_bucket.Put( []byte( check_in.UUID ) , []byte( reencrypted_user_b64 ) )
+			return nil
+		})
+
+		for _ , print_string := range print_tickets {
+			fmt.Println( "printing" , print_string )
+			printer.Print( s.Config.MiscMap[ "printer_name" ] , s.Config.MiscMap[ "font_path" ] , print_string )
+		}
 
 		return c.JSON( fiber.Map{
 			"result": true ,
 			"check_in": check_in ,
+			"print_tickets": print_tickets ,
 		})
 	}
 }

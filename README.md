@@ -9,3 +9,4 @@
 ### To Do
 
 - fix e2e
+- fix printing
