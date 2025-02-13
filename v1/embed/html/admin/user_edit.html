@@ -12,6 +12,12 @@
       margin-top: 20px; 
       display: none; 
     }
+    .section-title {
+      margin-top: 1rem;
+      margin-bottom: 0.5rem;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 0.25rem;
+    }
   </style>
   <script src="/cdn/nacl.min.js"></script>
 </head>
@@ -47,7 +53,6 @@
     <!-- Edit User Form -->
     <form id="edit-user-form" action="/user/edit" method="post">
       <fieldset class="border p-3 mb-3">
-        <!-- <legend class="w-auto px-2">User Information</legend> -->
         <div class="row">
           <!-- Left Column: Barcode & Children Information -->
           <div class="col-md-6">
@@ -61,29 +66,87 @@
               <button type="button" id="add-child-button" class="btn btn-secondary">Add Child</button>
             </div>
           </div>
-          <!-- Right Column: Parent Information -->
+          <!-- Right Column: Parent & Spouse Information -->
           <div class="col-md-6">
+            <!-- Parent Information -->
+            <h2 class="section-title">Parent Information</h2>
             <div class="mb-3">
-              <label for="parents_first_name" class="form-label">Parent's First Name</label>
-              <input type="text" id="parents_first_name" name="parents_first_name" class="form-control">
+              <label for="parent_first_name" class="form-label">First Name</label>
+              <input type="text" id="parent_first_name" name="parent_first_name" class="form-control">
             </div>
             <div class="mb-3">
-              <label for="parents_last_name" class="form-label">Parent's Last Name</label>
-              <input type="text" id="parents_last_name" name="parents_last_name" class="form-control">
+              <label for="parent_middle_name" class="form-label">Middle Name</label>
+              <input type="text" id="parent_middle_name" name="parent_middle_name" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label for="parent_last_name" class="form-label">Last Name</label>
+              <input type="text" id="parent_last_name" name="parent_last_name" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label for="parent_sex" class="form-label">Gender</label>
+              <select class="form-select" id="parent_sex" name="parent_sex">
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="parent_phone_number" class="form-label">Phone Number</label>
+              <input type="tel" id="parent_phone_number" name="parent_phone_number" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label for="parent_email_address" class="form-label">Email Address</label>
+              <input type="email" id="parent_email_address" name="parent_email_address" class="form-control">
             </div>
             <div class="row">
-              <div class="col-md-6 mb-3">
-                <label for="phone_number" class="form-label">Phone Number</label>
-                <input type="tel" id="phone_number" name="phone_number" class="form-control">
+              <div class="col-md-4 mb-3">
+                <label for="parent_dob_month" class="form-label">DOB Month</label>
+                <input type="text" id="parent_dob_month" name="parent_dob_month" class="form-control" placeholder="Month">
               </div>
-              <div class="col-md-6 mb-3">
-                <label for="email_address" class="form-label">Email Address</label>
-                <input type="email" id="email_address" name="email_address" class="form-control">
+              <div class="col-md-4 mb-3">
+                <label for="parent_dob_day" class="form-label">DOB Day</label>
+                <input type="number" id="parent_dob_day" name="parent_dob_day" class="form-control" placeholder="Day">
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="parent_dob_year" class="form-label">DOB Year</label>
+                <input type="number" id="parent_dob_year" name="parent_dob_year" class="form-control" placeholder="Year">
               </div>
             </div>
+            <!-- Spouse Information -->
+            <h2 class="section-title">Spouse Information (Optional)</h2>
+            <div class="mb-3">
+              <label for="spouse_first_name" class="form-label">First Name</label>
+              <input type="text" id="spouse_first_name" name="spouse_first_name" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label for="spouse_middle_name" class="form-label">Middle Name</label>
+              <input type="text" id="spouse_middle_name" name="spouse_middle_name" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label for="spouse_last_name" class="form-label">Last Name</label>
+              <input type="text" id="spouse_last_name" name="spouse_last_name" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label for="spouse_sex" class="form-label">Gender</label>
+              <select class="form-select" id="spouse_sex" name="spouse_sex">
+                <option value="">Select</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="spouse_phone_number" class="form-label">Phone Number</label>
+              <input type="tel" id="spouse_phone_number" name="spouse_phone_number" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label for="spouse_email_address" class="form-label">Email Address</label>
+              <input type="email" id="spouse_email_address" name="spouse_email_address" class="form-control">
+            </div>
+            <!-- Family Size (will be recalculated) -->
             <div class="mb-3">
               <label for="family_size" class="form-label">Family Size</label>
-              <input type="number" id="family_size" name="family_size" class="form-control" value="1" min="1">
+              <input type="number" id="family_size" name="family_size" class="form-control" value="1" min="1" readonly>
             </div>
           </div>
         </div>
@@ -103,32 +166,46 @@
     const barcode_regex = /^\d+$/;
     function is_barcode(str) { return barcode_regex.test(str); }
     
-    // Updated populate_form function: now checks and wraps children in an array if needed.
+    // Updated populate_form: uses identity for parent info and fills spouse info if available.
     function populate_form(user) {
       window.ACTIVE_USER = user;
       window.USER.BLANK = user;
       window.USER.PK = user.pk;
       document.getElementById("form_barcode").value = (user.barcodes && user.barcodes[0]) || '';
       
-      // Populate Parent info (assumed to be the first family member)
-      if (user.family_members && user.family_members[0]) {
-        const parent = user.family_members[0];
-        document.getElementById("parents_first_name").value = parent.first_name || '';
-        document.getElementById("parents_last_name").value = parent.last_name || '';
-        document.getElementById("phone_number").value = parent.phone_number || '';
-        document.getElementById("email_address").value = parent.email_address || '';
+      // Populate Parent info from identity.
+      if (user.identity) {
+        const identity = user.identity;
+        document.getElementById("parent_first_name").value = identity.first_name || '';
+        document.getElementById("parent_middle_name").value = identity.middle_name || '';
+        document.getElementById("parent_last_name").value = identity.last_name || '';
+        document.getElementById("parent_sex").value = identity.sex || '';
+        document.getElementById("parent_phone_number").value = identity.phone_number || '';
+        document.getElementById("parent_email_address").value = identity.email_address || '';
+        document.getElementById("parent_dob_month").value = identity.date_of_birth ? identity.date_of_birth.month : '';
+        document.getElementById("parent_dob_day").value = identity.date_of_birth ? identity.date_of_birth.day : '';
+        document.getElementById("parent_dob_year").value = identity.date_of_birth ? identity.date_of_birth.year : '';
       }
+      
+      // Populate Spouse info if available.
+      if (user.spouse) {
+        document.getElementById("spouse_first_name").value = user.spouse.first_name || '';
+        document.getElementById("spouse_middle_name").value = user.spouse.middle_name || '';
+        document.getElementById("spouse_last_name").value = user.spouse.last_name || '';
+        document.getElementById("spouse_sex").value = user.spouse.sex || '';
+        document.getElementById("spouse_phone_number").value = user.spouse.phone_number || '';
+        document.getElementById("spouse_email_address").value = user.spouse.email_address || '';
+      }
+      
+      // Family Size
       document.getElementById("family_size").value = user.family_size || 1;
       
-      // Populate Children info if available.
+      // Populate Children info.
       const childrenContainer = document.getElementById("children-container");
       childrenContainer.innerHTML = '';
       let children = user.children;
-      if (children) {
-        // Ensure children is an array.
-        if (!Array.isArray(children)) {
-          children = [ children ];
-        }
+      if (children && !Array.isArray(children)) {
+        children = [ children ];
       }
       if (children && children.length > 0) {
         children.forEach(child => addChildEntry(child));
@@ -150,8 +227,8 @@
       resultsBody.innerHTML = '';
       document.getElementById("searchResults").style.display = "block";
       users.forEach((user, index) => {
+        const parent = user.identity || {};
         const row = document.createElement("tr");
-        const parent = (user.family_members && user.family_members[0]) || {};
         row.innerHTML = `
           <td>${user.username || ''}</td>
           <td>${parent.first_name || ''} ${parent.last_name || ''}</td>
@@ -172,11 +249,6 @@
       document.getElementById("searchResults").style.display = "none";
     }
     
-    function convert_bytes_to_hex_string(key_bytes) {
-      return Array.from(key_bytes)
-        .map(byte => byte.toString(16).padStart(2, '0'))
-        .join('');
-    }
     function uint8_array_to_base64(uint8Array) {
       return btoa(String.fromCharCode(...uint8Array));
     }
@@ -252,38 +324,40 @@
         }
       });
     }
-		function get_pk() {
-			return new Promise(function(resolve, reject) {
-				try {
-					var currentUrl = window.location.href;
-					var url = currentUrl.replace(/\/user\/edit/, "/pk");
-					var xhr = new XMLHttpRequest();
-					xhr.open("GET", url, false);
-					xhr.setRequestHeader("Content-Type", "application/json");
-					xhr.onload = function() {
-						if (xhr.status === 200) {
-							var response = JSON.parse(xhr.responseText);
-							if ( response[ "pk" ] ) {
-								resolve(response[ "pk" ]);
-							} else {
-								resolve(false);
-							}
-						} else {
-							console.error("Error fetching user:", xhr.statusText);
-							resolve(false);
-						}
-					};
-					xhr.onerror = function() {
-						console.error("GET request error");
-						resolve(false);
-					};
-					xhr.send();
-				} catch (error) { 
-					console.log(error); 
-					resolve(false); 
-				}
-			});
-		}
+    
+    function get_pk() {
+      return new Promise(function(resolve, reject) {
+        try {
+          var currentUrl = window.location.href;
+          var url = currentUrl.replace(/\/user\/edit/, "/pk");
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", url, false);
+          xhr.setRequestHeader("Content-Type", "application/json");
+          xhr.onload = function() {
+            if (xhr.status === 200) {
+              var response = JSON.parse(xhr.responseText);
+              if ( response[ "pk" ] ) {
+                resolve(response[ "pk" ]);
+              } else {
+                resolve(false);
+              }
+            } else {
+              console.error("Error fetching user:", xhr.statusText);
+              resolve(false);
+            }
+          };
+          xhr.onerror = function() {
+            console.error("GET request error");
+            resolve(false);
+          };
+          xhr.send();
+        } catch (error) { 
+          console.log(error); 
+          resolve(false); 
+        }
+      });
+    }
+    
     function fuzzy_search_user(input_text) {
       return new Promise(function(resolve, reject) {
         try {
@@ -446,17 +520,41 @@
       });
     }
     
-    // Gather current form values: parent info and children entries.
+    // Gather current form values: parent identity, spouse info, and children entries.
     function set_user_to_current_form() {
-      window.USER.BLANK.family_members = [];
-      let parent = {
-        first_name: document.getElementById("parents_first_name").value.trim(),
-        last_name: document.getElementById("parents_last_name").value.trim(),
-        phone_number: document.getElementById("phone_number").value.trim(),
-        email_address: document.getElementById("email_address").value.trim(),
+      // Parent Identity
+      window.USER.BLANK.identity = {
+        first_name: document.getElementById("parent_first_name").value.trim(),
+        middle_name: document.getElementById("parent_middle_name").value.trim(),
+        last_name: document.getElementById("parent_last_name").value.trim(),
+        sex: document.getElementById("parent_sex").value,
+        phone_number: document.getElementById("parent_phone_number").value.trim(),
+        email_address: document.getElementById("parent_email_address").value.trim(),
+        date_of_birth: {
+          month: document.getElementById("parent_dob_month").value.trim(),
+          day: parseInt(document.getElementById("parent_dob_day").value.trim()) || 0,
+          year: parseInt(document.getElementById("parent_dob_year").value.trim()) || 0
+        }
       };
-      window.USER.BLANK.family_members.push(parent);
       
+      // Spouse Information (if provided)
+      let spouseFirstName = document.getElementById("spouse_first_name").value.trim();
+      let spouseLastName = document.getElementById("spouse_last_name").value.trim();
+      if (spouseFirstName || spouseLastName) {
+        window.USER.BLANK.spouse = {
+          first_name: spouseFirstName,
+          middle_name: document.getElementById("spouse_middle_name").value.trim(),
+          last_name: spouseLastName,
+          sex: document.getElementById("spouse_sex").value,
+          phone_number: document.getElementById("spouse_phone_number").value.trim(),
+          email_address: document.getElementById("spouse_email_address").value.trim(),
+          date_of_birth: { month: "", day: 0, year: 0 }
+        };
+      } else {
+        window.USER.BLANK.spouse = null;
+      }
+      
+      // Barcode
       let barcode = document.getElementById("form_barcode").value.trim();
       if (barcode.length > 0) {
         window.USER.BLANK.barcodes = [ barcode ];
@@ -479,15 +577,26 @@
             phone_number: "",
             email_address: "",
             date_of_birth: { month: "", day: 0, year: 0 },
-            age: childAge
+            age: childAge ,
+            uuid: crypto.randomUUID()
           };
           window.USER.BLANK.children.push(child);
         }
       });
       
-      // Update family size: parent + children.
-      let familySize = 1 + window.USER.BLANK.children.length;
+      // Update family_members: include parent identity and spouse if provided.
+      window.USER.BLANK.family_members = [];
+      window.USER.BLANK.family_members.push(window.USER.BLANK.identity);
+      if (window.USER.BLANK.spouse && window.USER.BLANK.spouse.first_name) {
+        window.USER.BLANK.family_members.push(window.USER.BLANK.spouse);
+      }
+      
+      // Update family size.
+      let familySize = 1; // parent
+      if (window.USER.BLANK.spouse && window.USER.BLANK.spouse.first_name) familySize++;
+      familySize += window.USER.BLANK.children.length;
       window.USER.BLANK.family_size = familySize;
+      document.getElementById("family_size").value = familySize;
     }
     
     // Function to add a child entry.
@@ -573,7 +682,8 @@
       clear_form_button.addEventListener("click", function() {
         edit_form.reset();
         window.USER.BLANK = {};
-        window.USER.BLANK.family_members = [{}];
+        window.USER.BLANK.identity = {};
+        window.USER.BLANK.spouse = {};
         document.getElementById("children-container").innerHTML = '';
         addChildEntry();
       });
@@ -581,6 +691,13 @@
       // Add Child button handler.
       document.getElementById("add-child-button").addEventListener("click", addChildEntry);
     })();
+    
+    // Prevent form submission on Enter key in non-textarea fields.
+    document.addEventListener("keypress", function(event) {
+      if (event.key === "Enter" && event.target.tagName.toLowerCase() !== "textarea") {
+        event.preventDefault();
+      }
+    });
   </script>
 </body>
 </html>

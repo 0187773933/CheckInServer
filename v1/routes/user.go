@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	"crypto/rand"
+	// "crypto/rand"
 	"io"
 	// hex "encoding/hex"
 	filepath "path/filepath"
@@ -16,7 +16,7 @@ import (
 	secretbox "golang.org/x/crypto/nacl/secretbox"
 	fiber "github.com/gofiber/fiber/v2"
 	user "github.com/0187773933/CheckInServer/v1/user"
-	printer "github.com/0187773933/CheckInServer/v1/printer"
+	// printer "github.com/0187773933/CheckInServer/v1/printer"
 	utils "github.com/0187773933/CheckInServer/v1/utils"
 	server "github.com/0187773933/GO_SERVER/v1/server"
 	encryption "github.com/0187773933/encryption/v1/encryption"
@@ -303,13 +303,9 @@ func UserEdit(s *server.Server) fiber.Handler {
 			})
 		}
 		fmt.Println("New user with username:", decryptedUser.Username)
-		fmt.Println(decryptedUser)
+		// fmt.Println(decryptedUser)
 
 		// --- Ensure UUIDs are set on all Person fields ---
-		// Ensure the primary adult (Identity) has a UUID.
-		if decryptedUser.Identity.UUID == "" {
-			decryptedUser.Identity.UUID = uuid.NewV4().String()
-		}
 		// If Spouse is provided, ensure they have a UUID.
 		if (decryptedUser.Spouse.FirstName != "" || decryptedUser.Spouse.LastName != "") && decryptedUser.Spouse.UUID == "" {
 			decryptedUser.Spouse.UUID = uuid.NewV4().String()
@@ -320,6 +316,8 @@ func UserEdit(s *server.Server) fiber.Handler {
 				decryptedUser.Children[i].UUID = uuid.NewV4().String()
 			}
 		}
+
+		fmt.Println("Decrypted User:", decryptedUser)
 
 		// --- Update Bleve Index ---
 		blevePath := filepath.Join(s.Config.SaveFilesPath, s.Config.MiscMap["bleve_path"])
@@ -596,15 +594,15 @@ func UserGetByBarcode( s *server.Server ) fiber.Handler {
 		barcode := c.Params( "barcode" )
 		fmt.Println( "searching for barcode" , barcode )
 		var matched_user user.User
-		s.DB.View( func( tx *bolt.Tx ) error {
-			users_barcodes := tx.Bucket( []byte( "users-barcodes" ) )
+		s.DB.Update( func( tx *bolt.Tx ) error {
+			users_barcodes  , _ := tx.CreateBucketIfNotExists( []byte( "users-barcodes" ) )
 			user_uuid := users_barcodes.Get( []byte( barcode ) )
 			if user_uuid == nil {
 				return nil
 			}
 			fmt.Println( "found user" , string( user_uuid ) )
-			users_blank := tx.Bucket( []byte( "users-blank" ) )
-			users_bucket := tx.Bucket( []byte( "users" ) )
+			users_blank  , _ := tx.CreateBucketIfNotExists( []byte( "users-blank" ) )
+			users_bucket , _ := tx.CreateBucketIfNotExists( []byte( "users" ) )
 			users_key_encrypted := users_blank.Get( user_uuid )
 			users_key_decrypted := encryption.ChaChaDecryptBytes( s.Config.Creds.EncryptionKey , users_key_encrypted )
 			var users_key_32 [ 32 ]byte
@@ -624,60 +622,79 @@ func UserGetByBarcode( s *server.Server ) fiber.Handler {
 	}
 }
 
+type UserCheckInEntry struct {
+	UUID string `json:"uuid"`
+	Additional []string `json:"additional"`
+}
 func UserCheckIn( s *server.Server ) fiber.Handler {
 	return func( c *fiber.Ctx ) error {
-		body := c.Body()
-		var response map[string]interface{}
-		if err := json.Unmarshal( body , &response ); err != nil {
-			fmt.Println( "Error parsing JSON:", err)
-			return c.Status( fiber.StatusBadRequest ).JSON( fiber.Map{
+		// body := c.Body()
+		// var response map[string]interface{}
+		// if err := json.Unmarshal( body , &response ); err != nil {
+		// 	fmt.Println( "Error parsing JSON:", err)
+		// 	return c.Status( fiber.StatusBadRequest ).JSON( fiber.Map{
+		// 		"error": "Failed to parse JSON request",
+		// 	})
+		// }
+
+		var check_in UserCheckInEntry
+		if err := c.BodyParser(&check_in); err != nil {
+			fmt.Println("Error parsing JSON:", err)
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Failed to parse JSON request",
 			})
 		}
-		uuid , ok := response[ "uuid" ].( string )
-		if !ok {
-			fmt.Println( "Error parsing JSON: uuid" , ok )
-			return c.Status( fiber.StatusBadRequest ).JSON( fiber.Map{
-				"error": "Failed to parse JSON request",
-			})
-		}
-		print_string := ""
-		var check_in user.CheckIn
-		s.DB.Update( func( tx *bolt.Tx ) error {
-			users_blank := tx.Bucket( []byte( "users-blank" ) )
-			users_key_encrypted := users_blank.Get( []byte( uuid ) )
-			users_key_decrypted := encryption.ChaChaDecryptBytes( s.Config.Creds.EncryptionKey , users_key_encrypted )
-			var users_key_32 [ 32 ]byte
-			copy( users_key_32[ : ] , users_key_decrypted )
-			users_bucket := tx.Bucket( []byte( "users" ) )
-			encrypted_user_b64 := users_bucket.Get( []byte( uuid ) )
-			encrypted_user_bytes := utils.ConvertB64StringToBytes( string( encrypted_user_b64 ) )
-			var nonce [ 24 ]byte
-			copy( nonce[ : ] , encrypted_user_bytes[ 0 : 24 ] )
-			decrypted_user_json , _ := secretbox.Open( nil , encrypted_user_bytes[ 24 : ] , &nonce , &users_key_32 )
-			var decrypted_user user.User
-			json.Unmarshal( decrypted_user_json , &decrypted_user )
-			fmt.Println( decrypted_user )
-			print_string = decrypted_user.Username
+		fmt.Println( check_in )
 
-			// check-in
-			now := s.LOG.GetNowTimeOBJ()
-			check_in.Date = s.LOG.FormatDateString( &now )
-			check_in.Time = s.LOG.FormatTimeString( &now )
-			decrypted_user.CheckIns = append( decrypted_user.CheckIns , check_in )
+		// uuid , ok := response[ "uuid" ].( string )
+		// if !ok {
+		// 	fmt.Println( "Error parsing JSON: uuid" , ok )
+		// 	return c.Status( fiber.StatusBadRequest ).JSON( fiber.Map{
+		// 		"error": "Failed to parse JSON request",
+		// 	})
+		// }
+		// print_string := ""
+		// var check_in user.CheckIn
+		// s.DB.Update( func( tx *bolt.Tx ) error {
+		// 	users_blank := tx.Bucket( []byte( "users-blank" ) )
+		// 	users_key_encrypted := users_blank.Get( []byte( uuid ) )
+		// 	users_key_decrypted := encryption.ChaChaDecryptBytes( s.Config.Creds.EncryptionKey , users_key_encrypted )
+		// 	var users_key_32 [ 32 ]byte
+		// 	copy( users_key_32[ : ] , users_key_decrypted )
+		// 	users_bucket := tx.Bucket( []byte( "users" ) )
+		// 	encrypted_user_b64 := users_bucket.Get( []byte( uuid ) )
+		// 	encrypted_user_bytes := utils.ConvertB64StringToBytes( string( encrypted_user_b64 ) )
+		// 	var nonce [ 24 ]byte
+		// 	copy( nonce[ : ] , encrypted_user_bytes[ 0 : 24 ] )
+		// 	decrypted_user_json , _ := secretbox.Open( nil , encrypted_user_bytes[ 24 : ] , &nonce , &users_key_32 )
+		// 	var decrypted_user user.User
+		// 	json.Unmarshal( decrypted_user_json , &decrypted_user )
+		// 	fmt.Println( decrypted_user )
+		// 	print_string = decrypted_user.Username
 
-			var new_nonce [ 24 ]byte
-			rand.Read( new_nonce[ : ] )
-			reenrypted_user_json , _ := json.Marshal( decrypted_user )
-			sealed_data := secretbox.Seal( nil , reenrypted_user_json , &new_nonce , &users_key_32 )
-			reencrypted_user_bytes := append( new_nonce[ : ] , sealed_data... )
-			reencrypted_user_b64 := utils.ConvertBytesToB64String( reencrypted_user_bytes )
-			users_bucket.Put( []byte( uuid ) , []byte( reencrypted_user_b64 ) )
-			fmt.Println( "Checked In" , print_string )
-			return nil
-		})
-		printer.Print( s.Config.MiscMap[ "printer_name" ] , s.Config.MiscMap[ "font_path" ] , print_string )
-		printer.Print( s.Config.MiscMap[ "printer_name" ] , s.Config.MiscMap[ "font_path" ] , print_string )
+		// 	// check-in
+		// 	now := s.LOG.GetNowTimeOBJ()
+		// 	check_in.Date = s.LOG.FormatDateString( &now )
+		// 	check_in.Time = s.LOG.FormatTimeString( &now )
+		// 	decrypted_user.CheckIns = append( decrypted_user.CheckIns , check_in )
+
+		// 	var new_nonce [ 24 ]byte
+		// 	rand.Read( new_nonce[ : ] )
+		// 	reenrypted_user_json , _ := json.Marshal( decrypted_user )
+		// 	sealed_data := secretbox.Seal( nil , reenrypted_user_json , &new_nonce , &users_key_32 )
+		// 	reencrypted_user_bytes := append( new_nonce[ : ] , sealed_data... )
+		// 	reencrypted_user_b64 := utils.ConvertBytesToB64String( reencrypted_user_bytes )
+		// 	users_bucket.Put( []byte( uuid ) , []byte( reencrypted_user_b64 ) )
+		// 	fmt.Println( "Checked In" , print_string )
+		// 	return nil
+		// })
+		// printer.Print( s.Config.MiscMap[ "printer_name" ] , s.Config.MiscMap[ "font_path" ] , print_string )
+		// printer.Print( s.Config.MiscMap[ "printer_name" ] , s.Config.MiscMap[ "font_path" ] , print_string )
+		// return c.JSON( fiber.Map{
+		// 	"result": true ,
+		// 	"check_in": check_in ,
+		// })
+
 		return c.JSON( fiber.Map{
 			"result": true ,
 			"check_in": check_in ,

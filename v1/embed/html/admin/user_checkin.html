@@ -56,38 +56,55 @@
           <div class="col-md-6">
             <div class="mb-3">
               <label for="form_barcode" class="form-label">Barcode</label>
-              <input type="text" id="form_barcode" name="barcode" class="form-control">
+              <input type="text" id="form_barcode" name="barcode" class="form-control" readonly>
             </div>
             <h2 class="h5">Children Information</h2>
             <div id="children-container"></div>
           </div>
-          <!-- Right Column: Parent Information -->
+          <!-- Right Column: Parent & Spouse Information -->
           <div class="col-md-6">
-            <div class="mb-3">
-              <label for="username" class="form-label">Child's Name</label>
-              <input type="text" id="username" name="username" class="form-control">
-            </div>
+            <!-- Parent Information -->
             <div class="mb-3">
               <label for="parents_first_name" class="form-label">Parent's First Name</label>
-              <input type="text" id="parents_first_name" name="parents_first_name" class="form-control">
+              <input type="text" id="parents_first_name" name="parents_first_name" class="form-control" readonly>
             </div>
             <div class="mb-3">
               <label for="parents_last_name" class="form-label">Parent's Last Name</label>
-              <input type="text" id="parents_last_name" name="parents_last_name" class="form-control">
+              <input type="text" id="parents_last_name" name="parents_last_name" class="form-control" readonly>
             </div>
             <div class="row">
               <div class="col-md-6 mb-3">
                 <label for="phone_number" class="form-label">Phone Number</label>
-                <input type="tel" id="phone_number" name="phone_number" class="form-control">
+                <input type="tel" id="phone_number" name="phone_number" class="form-control" readonly>
               </div>
               <div class="col-md-6 mb-3">
                 <label for="email_address" class="form-label">Email Address</label>
-                <input type="email" id="email_address" name="email_address" class="form-control">
+                <input type="email" id="email_address" name="email_address" class="form-control" readonly>
+              </div>
+            </div>
+            <!-- Spouse Information -->
+            <h2 class="h5 mt-4">Spouse Information (Optional)</h2>
+            <div class="mb-3">
+              <label for="spouse_first_name" class="form-label">Spouse's First Name</label>
+              <input type="text" id="spouse_first_name" name="spouse_first_name" class="form-control" readonly>
+            </div>
+            <div class="mb-3">
+              <label for="spouse_last_name" class="form-label">Spouse's Last Name</label>
+              <input type="text" id="spouse_last_name" name="spouse_last_name" class="form-control" readonly>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="spouse_phone_number" class="form-label">Spouse's Phone Number</label>
+                <input type="tel" id="spouse_phone_number" name="spouse_phone_number" class="form-control" readonly>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="spouse_email_address" class="form-label">Spouse's Email Address</label>
+                <input type="email" id="spouse_email_address" name="spouse_email_address" class="form-control" readonly>
               </div>
             </div>
             <div class="mb-3">
               <label for="family_size" class="form-label">Family Size</label>
-              <input type="number" id="family_size" name="family_size" class="form-control" value="1" min="1">
+              <input type="number" id="family_size" name="family_size" class="form-control" value="1" min="1" readonly>
             </div>
           </div>
         </div>
@@ -106,19 +123,26 @@
     const barcode_regex = /^\d+$/;
     function is_barcode(str) { return barcode_regex.test(str); }
     
-    // Populate the form with user data.
+    // Updated populate_form: now also fills in spouse information if available.
     function populate_form(user) {
       window.ACTIVE_USER = user;
       document.getElementById("form_barcode").value = (user.barcodes && user.barcodes[0]) || '';
-      document.getElementById("username").value = user.username || '';
-      if (user.family_members && user.family_members[0]) {
-        const parent = user.family_members[0];
-        document.getElementById("parents_first_name").value = parent.first_name || '';
-        document.getElementById("parents_last_name").value = parent.last_name || '';
-        document.getElementById("phone_number").value = parent.phone_number || '';
-        document.getElementById("email_address").value = parent.email_address || '';
-      }
+      // document.getElementById("username").value = user.username || '';
+      // Populate Parent info (use identity if available; else fallback to family_members[0])
+      let parent = user.identity || (user.family_members && user.family_members[0]) || {};
+      document.getElementById("parents_first_name").value = parent.first_name || '';
+      document.getElementById("parents_last_name").value = parent.last_name || '';
+      document.getElementById("phone_number").value = parent.phone_number || '';
+      document.getElementById("email_address").value = parent.email_address || '';
       document.getElementById("family_size").value = user.family_size || 1;
+      
+      // Populate Spouse info if available.
+      if (user.spouse) {
+        document.getElementById("spouse_first_name").value = user.spouse.first_name || '';
+        document.getElementById("spouse_last_name").value = user.spouse.last_name || '';
+        document.getElementById("spouse_phone_number").value = user.spouse.phone_number || '';
+        document.getElementById("spouse_email_address").value = user.spouse.email_address || '';
+      }
       
       // Populate Children Information if available.
       const childrenContainer = document.getElementById("children-container");
@@ -146,8 +170,8 @@
       resultsBody.innerHTML = '';
       document.getElementById("searchResults").style.display = "block";
       users.forEach((user, index) => {
+        const parent = user.identity || (user.family_members && user.family_members[0]) || {};
         const row = document.createElement("tr");
-        const parent = (user.family_members && user.family_members[0]) || {};
         row.innerHTML = `
           <td>${user.username || ''}</td>
           <td>${parent.first_name || ''} ${parent.last_name || ''}</td>
@@ -351,7 +375,7 @@
         </div>
         <div class="mb-2">
           <label class="form-label">Child's First Name</label>
-          <input type="text" class="form-control child_first_name" value="${child.first_name || ''}" readonly>
+          <input type="text" class="form-control child_first_name" uuid="${child.uuid}" value="${child.first_name || ''}" readonly>
         </div>
         <div class="row mb-2">
           <div class="col">
@@ -383,18 +407,19 @@
     document.getElementById("user-checkin-form").addEventListener("submit", async function(event) {
       event.preventDefault();
       // Build payload: include user's uuid and only selected children.
-      let payload = { uuid: window.ACTIVE_USER.uuid, children: [] };
+      let payload = { uuid: window.ACTIVE_USER.uuid, additional: [] };
       const childrenContainer = document.getElementById("children-container");
       const childEntries = childrenContainer.getElementsByClassName("child-entry");
       Array.from(childEntries).forEach(entry => {
         let checkbox = entry.querySelector(".child-select");
         if (checkbox && checkbox.checked) {
-          let child = {
-            first_name: entry.querySelector(".child_first_name").value,
-            age: parseInt(entry.querySelector(".child_age").value) || 0,
-            sex: entry.querySelector(".child_sex").value
-          };
-          payload.children.push(child);
+          // let child = {
+          //   first_name: entry.querySelector(".child_first_name").value,
+          //   age: parseInt(entry.querySelector(".child_age").value) || 0,
+          //   sex: entry.querySelector(".child_sex").value
+          // };
+          let x_uuid = entry.querySelector(".child_first_name").getAttribute( "uuid" ) ;
+          payload.additional.push( x_uuid );
         }
       });
       const success = await post_check_in(payload);
