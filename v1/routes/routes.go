@@ -86,6 +86,14 @@ func SetupPublicRoutes( s *server.Server ) {
 	// prefix.Get( "/:library_key/:session_id/:index" , SessionHTMLPlayerAtIndex( s ) ) // HTML Player at Session Index ?
 }
 
+func GetPK( s *server.Server ) fiber.Handler {
+	return func( c *fiber.Ctx ) error {
+		return c.JSON( fiber.Map{
+			"pk": X25519PublicB64String ,
+		})
+	}
+}
+
 func SetupAdminRoutes( s *server.Server ) {
 	prefix_string := "/"
 	if s.Config.URLS.AdminPrefix != "" {
@@ -108,12 +116,14 @@ func SetupAdminRoutes( s *server.Server ) {
 	X25519PublicB64String = base64.StdEncoding.EncodeToString( X25519Public[ : ] )
 	X25519PrivateB64String = base64.StdEncoding.EncodeToString( X25519Private[ : ] )
 
+	admin.Get( "/pk" , GetPK( s ) )
 	admin.Get( "/user/new" , UserNewForm( s ) )
 	admin.Get( "/user/blank" , UserBlank( s ) )
 	admin.Get( "/user/checkin" , UserCheckInForm( s ) )
 	admin.Post( "/user/checkin" , UserCheckIn( s ) )
 	admin.Post( "/user/edit" , UserEdit( s ) )
 	admin.Get( "/user/edit/:uuid" , UserEditForm( s ) ) // TODO : replies with deencrypted
+	admin.Get( "/user/edit/" , UserEditForm( s ) ) // TODO : replies with deencrypted
 	admin.Get( "/user/get/:uuid" , UserGet( s ) )
 	admin.Get( "/user/get/barcode/:barcode" , UserGetByBarcode( s ) )
 	admin.Get( "/user/search/:search_term" , UserSearch( s ) )

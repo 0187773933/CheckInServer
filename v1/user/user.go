@@ -11,13 +11,6 @@ type CheckIn struct {
 	Time string `json:"time"`
 }
 
-// type FailedCheckIn struct {
-// 	Date string `json:"date"`
-// 	Time string `json:"time"`
-// 	Type string `json:"type"`
-// 	DaysRemaining int `json:"remaining_days"`
-// }
-
 type DateOfBirth struct {
 	Month string `json:"month"`
 	Day int `json:"day"`
@@ -43,9 +36,9 @@ type Person struct {
 	Sex string `json:"sex"`
 	Height string `json:"height"`
 	EyeColor string `json:"eye_color"`
-	Spouse bool `json:"spouse"`
 	PhoneNumber string `json:"phone_number"`
 	EmailAddress string `json:"email_address"`
+	UUID string `json:"uuid"`
 }
 
 type User struct {
@@ -59,9 +52,11 @@ type User struct {
 	EmailAddress string `json:"email_address"`
 	PhoneNumber string `json:"phone_number"`
 	Identity Person `json:"identity"`
-	AuthorizedAliases []Person `json:"authorized_aliases"`
+	AuthorizedAliases []string `json:"authorized_aliases"`
 	FamilySize int `json:"family_size"`
 	FamilyMembers []Person `json:"family_members"`
+	Spouse Person `json:"spouse"`
+	Children []Person `json:"children"`
 	CreatedDate string `json:"created_date"`
 	CreatedTime string `json:"created_time"`
 	CheckIns []CheckIn `json:"check_ins"`

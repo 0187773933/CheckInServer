@@ -1,351 +1,395 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Admin - New User</title>
-	<script src="/cdn/nacl.min.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin - New User</title>
+  <!-- Bootstrap CSS (modern Bootstrap) -->
+  <link rel="stylesheet" href="/cdn/bootstrap.min.css">
+  <!-- Custom CSS if needed -->
+  <style>
+    .child-entry {
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+  </style>
 </head>
 <body>
-	<!-- <h1>Create New User</h1> -->
-<!-- 	<form id="new-user-form" action="/user/edit" method="post">
-		<fieldset>
-			<legend>User Information</legend>
+  <div class="container my-4">
+    <h1 class="mb-4">Create New User</h1>
+    <!-- Create User button at the top -->
+    <div class="mb-3">
+      <button id="submit-button" type="submit" form="new-user-form" class="btn btn-primary btn-lg">Create User</button>
+    </div>
+    <form id="new-user-form" action="/user/edit" method="post">
+      <div class="row">
+        <!-- Left Column: Barcode and Children Information -->
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label for="barcode" class="form-label">Barcode</label>
+            <input type="text" class="form-control" id="barcode" name="barcode">
+          </div>
+          <h2 class="h5">Children Information</h2>
+          <div id="children-container"></div>
+          <div class="mb-3">
+            <button type="button" id="add-child-button" class="btn btn-secondary">Add Child</button>
+          </div>
+        </div>
+        <!-- Right Column: Parent & Spouse Information -->
+        <div class="col-md-6">
+          <h2 class="h5">Parent Information</h2>
+          <div class="mb-3">
+            <label for="parent_first_name" class="form-label">First Name</label>
+            <input type="text" class="form-control" id="parent_first_name" name="parent_first_name">
+          </div>
+          <div class="mb-3">
+            <label for="parent_middle_name" class="form-label">Middle Name</label>
+            <input type="text" class="form-control" id="parent_middle_name" name="parent_middle_name">
+          </div>
+          <div class="mb-3">
+            <label for="parent_last_name" class="form-label">Last Name</label>
+            <input type="text" class="form-control" id="parent_last_name" name="parent_last_name">
+          </div>
+          <div class="mb-3">
+            <label for="parent_sex" class="form-label">Gender</label>
+            <select class="form-select" id="parent_sex" name="parent_sex">
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="parent_phone_number" class="form-label">Phone Number</label>
+            <input type="tel" class="form-control" id="parent_phone_number" name="parent_phone_number">
+          </div>
+          <div class="mb-3">
+            <label for="parent_email_address" class="form-label">Email Address</label>
+            <input type="email" class="form-control" id="parent_email_address" name="parent_email_address">
+          </div>
+          <div class="mb-3">
+            <label for="parent_dob_month" class="form-label">DOB Month</label>
+            <input type="text" class="form-control" id="parent_dob_month" name="parent_dob_month" placeholder="Month">
+          </div>
+          <div class="mb-3">
+            <label for="parent_dob_day" class="form-label">DOB Day</label>
+            <input type="number" class="form-control" id="parent_dob_day" name="parent_dob_day" placeholder="Day">
+          </div>
+          <div class="mb-3">
+            <label for="parent_dob_year" class="form-label">DOB Year</label>
+            <input type="number" class="form-control" id="parent_dob_year" name="parent_dob_year" placeholder="Year">
+          </div>
+          <h2 class="h5">Spouse Information (Optional)</h2>
+          <div class="mb-3">
+            <label for="spouse_first_name" class="form-label">First Name</label>
+            <input type="text" class="form-control" id="spouse_first_name" name="spouse_first_name">
+          </div>
+          <div class="mb-3">
+            <label for="spouse_middle_name" class="form-label">Middle Name</label>
+            <input type="text" class="form-control" id="spouse_middle_name" name="spouse_middle_name">
+          </div>
+          <div class="mb-3">
+            <label for="spouse_last_name" class="form-label">Last Name</label>
+            <input type="text" class="form-control" id="spouse_last_name" name="spouse_last_name">
+          </div>
+          <div class="mb-3">
+            <label for="spouse_sex" class="form-label">Gender</label>
+            <select class="form-select" id="spouse_sex" name="spouse_sex">
+              <option value="">Select</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="spouse_phone_number" class="form-label">Phone Number</label>
+            <input type="tel" class="form-control" id="spouse_phone_number" name="spouse_phone_number">
+          </div>
+          <div class="mb-3">
+            <label for="spouse_email_address" class="form-label">Email Address</label>
+            <input type="email" class="form-control" id="spouse_email_address" name="spouse_email_address">
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
 
-			<label for="username">Username:</label>
-			<input type="text" id="username" name="username" ><br><br>
-
-			<label for="email">Email Address:</label>
-			<input type="email" id="email" name="email_address" ><br><br>
-
-			<label for="phone">Phone Number:</label>
-			<input type="tel" id="phone" name="phone_number"><br><br>
-
-			<label for="language">Preferred Language:</label>
-			<input type="text" id="language" name="language"><br><br>
-
-			<label for="family_size">Family Size:</label>
-			<input type="number" id="family_size" name="family_size" value="1" min="1"><br><br>
-		</fieldset>
-
-		<fieldset>
-			<legend>Personal Identity</legend>
-
-			<label for="first_name">First Name:</label>
-			<input type="text" id="first_name" name="identity[first_name]" required><br><br>
-
-			<label for="last_name">Last Name:</label>
-			<input type="text" id="last_name" name="identity[last_name]" required><br><br>
-
-			<label for="middle_name">Middle Name:</label>
-			<input type="text" id="middle_name" name="identity[middle_name]"><br><br>
-
-			<label for="age">Age:</label>
-			<input type="number" id="age" name="identity[age]" min="0"><br><br>
-
-			<label for="sex">Sex:</label>
-			<input type="text" id="sex" name="identity[sex]"><br><br>
-
-			<label for="height">Height:</label>
-			<input type="text" id="height" name="identity[height]"><br><br>
-
-			<label for="eye_color">Eye Color:</label>
-			<input type="text" id="eye_color" name="identity[eye_color]"><br><br>
-
-			<label for="spouse">Spouse:</label>
-			<input type="checkbox" id="spouse" name="identity[spouse]"><br><br>
-		</fieldset>
-
-		<fieldset>
-			<legend>Address</legend>
-
-			<label for="street_number">Street Number:</label>
-			<input type="text" id="street_number" name="identity[address][street_number]"><br><br>
-
-			<label for="street_name">Street Name:</label>
-			<input type="text" id="street_name" name="identity[address][street_name]"><br><br>
-
-			<label for="address_two">Address Line 2:</label>
-			<input type="text" id="address_two" name="identity[address][address_two]"><br><br>
-
-			<label for="city">City:</label>
-			<input type="text" id="city" name="identity[address][city]"><br><br>
-
-			<label for="state">State:</label>
-			<input type="text" id="state" name="identity[address][state]"><br><br>
-
-			<label for="zipcode">Zip Code:</label>
-			<input type="text" id="zipcode" name="identity[address][zipcode]"><br><br>
-		</fieldset>
-
-		<fieldset>
-			<legend>Date of Birth</legend>
-
-			<label for="dob_month">Month:</label>
-			<input type="text" id="dob_month" name="identity[date_of_birth][month]"><br><br>
-
-			<label for="dob_day">Day:</label>
-			<input type="number" id="dob_day" name="identity[date_of_birth][day]" min="1" max="31"><br><br>
-
-			<label for="dob_year">Year:</label>
-			<input type="number" id="dob_year" name="identity[date_of_birth][year]" min="1900"><br><br>
-		</fieldset>
-
-		<fieldset>
-			<legend>Verification</legend>
-
-			<label for="verified">Verified:</label>
-			<input type="checkbox" id="verified" name="verified"><br><br>
-		</fieldset>
-
-		<button type="submit">Create User</button>
-	</form> -->
-
-	<h1>Create New User</h1>
-	<form id="new-user-form" action="/user/edit" method="post">
-		<fieldset>
-			<legend>User Information</legend>
-
-			<label for="barcode">Barcode :</label>
-			<input type="text" id="barcode" name="barcode" ><br><br>
-
-			<label for="username">Child's Name :</label>
-			<input type="text" id="username" name="username" ><br><br>
-
-			<label for="parents_first_name">Parent's First Name :</label>
-			<input type="text" id="parents_first_name" name="parents_first_name" ><br><br>
-
-			<label for="parents_last_name">Parent's Last Name :</label>
-			<input type="text" id="parents_last_name" name="parents_last_name" ><br><br>
-
-			<label for="phone_number">Phone Number :</label>
-			<input type="tel" id="phone_number" name="phone_number"><br><br>
-
-			<label for="email_address">Email Address :</label>
-			<input type="email" id="email_address" name="email_address"><br><br>
-
-			<label for="family_size">Family Size:</label>
-			<input type="number" id="family_size" name="family_size" value="1" min="1"><br><br>
-		</fieldset>
-		<br>
-		<button id="submit-button" type="submit">Create User</button>
-	</form>
-
-	<script type="text/javascript">
-		function convert_bytes_to_hex_string( key_bytes ) {
-			let key_string = Array.from( key_bytes ).map( byte => byte.toString( 16 ).padStart( 2 , '0' ) ).join( '' );
-			return key_string;
-		}
-		function uint8_array_to_base64( uint8Array ) {
-			return btoa( String.fromCharCode( ...uint8Array ) );
-		}
-		function base64_to_uint8_array( base64 ) {
-			return new Uint8Array( atob( base64 ).split( "" ).map( char => char.charCodeAt( 0 ) ) );
-		}
-		function get_blank_user() {
-			return new Promise( function( resolve , reject ) {
-				try {
-					var currentUrl = window.location.href;
-					var url = currentUrl.replace( /\/new$/ , "/blank" );
-					var xhr = new XMLHttpRequest();
-					xhr.open( "GET" , url , false );
-					xhr.setRequestHeader( "Content-Type" , "application/json" );
-					xhr.onload = function () {
-						if ( xhr.status === 200 ) {
-							var response = JSON.parse( xhr.responseText );
-							resolve( response );
-							return;
-						} else {
-							console.error( "Error fetching blank user:" , xhr.statusText );
-							resolve( false );
-							return;
-						}
-					};
-					xhr.onerror = function () {
-						console.error( "GET request error" );
-						resolve( false );
-						return;
-					};
-					xhr.send();
-				}
-				catch( error ) { console.log( error ); resolve( false ); return; }
-			});
-		}
-		function post_new_user( blank_user ) {
-			return new Promise( function( resolve , reject ) {
-				try {
-					var current_url = window.location.href;
-					var url = current_url.replace( /\/new$/ , "/edit" );
-					var xhr = new XMLHttpRequest();
-					xhr.open( "POST" , url , false );
-					xhr.setRequestHeader( "Content-Type" , "application/json" );
-					xhr.onload = function () {
-						if ( xhr.status === 200 ) {
-							console.log( "Successfully posted to:" , url );
-							resolve( true );
-							return;
-						} else {
-							console.error( "Error posting to:" , url , xhr.statusText );
-							resolve( false );
-							return;
-						}
-					};
-					xhr.onerror = function () {
-						console.error( "POST request error" );
-						resolve( false );
-						return;
-					};
-					var data = JSON.stringify( blank_user );
-					xhr.send( data );
-				}
-				catch( error ) { console.log( error ); resolve( false ); return; }
-			});
-		}
-		function secret_box_encrypt( js_obj , key ) {
-			try {
-				let key_bytes = new Uint8Array( key );
-				let key_nonce = new Uint8Array( 24 );
-				window.crypto.getRandomValues( key_nonce );
-				let json_string = JSON.stringify( js_obj );
-				let js_bytes = new TextEncoder().encode( json_string );
-				let sealed = nacl.secretbox( js_bytes , key_nonce , key_bytes );
-				let combined = new Uint8Array( key_nonce.length + sealed.length );
-				combined.set( key_nonce );
-				combined.set( sealed , key_nonce.length );
-				let result = uint8_array_to_base64( combined );
-				return result;
-			} catch( error ) { console.log( error ); return false; }
-		}
-
-		function secret_box_generate_new_key() {
-			let key = nacl.randomBytes( 32 );
-			return key;
-		}
-
-		async function derive_key( shared_secret ) {
-			let hash_buffer = await crypto.subtle.digest( "SHA-256" , shared_secret );
-			return new Uint8Array( hash_buffer ).slice( 0 , 32 );
-		}
-
-		async function derive_key_hkdf( shared_secret ) {
-			const salt = new Uint8Array( 0 ); // Optional salt (can be left empty)
-			const info = new Uint8Array( 0 ); // Optional info field
-			let key_material = await crypto.subtle.importKey(
-				"raw" , shared_secret , { name: "HKDF" } , false , [ "deriveBits" ]
-			);
-			let derived_bits = await crypto.subtle.deriveBits(
-				{ name: "HKDF" , hash: "SHA-256" , salt , info } ,
-				key_material , 256
-			);
-			return new Uint8Array( derived_bits );
-		}
-
-		function get_key( secret_key , public_key ) {
-			return new Promise( async function( resolve , reject ) {
-				try {
-					// Kyber Version
-					// console.log( Kyber );
-					// 2.) Generate Cypher-Text and Shared-Secret based on Server's Public Key
-					// let recipient = new Kyber.MlKem1024();
-					// const [ pkR , skR ] = await recipient.generateKeyPair();
-					// const sender = new Kyber.MlKem1024();
-					// const user_kp_uint8 = new Uint8Array( user.kp );
-					// const [ ct , ssS ] = await sender.encap( user_kp_uint8 );
-
-					// 3.) Encrypt User Data with Shared-Secret
-					// const second_key = ssS.slice( 0 , 32 );
-					// let user_encrypted = secret_box_encrypt( user.blank , second_key , user.ecb );
-					// console.log( user_encrypted );
-
-					// X25519 Version
-					// 2.) Generate Cypher-Text and Shared-Secret based on Server's Public Key
-					let server_pk = base64_to_uint8_array( public_key );
-					// console.log( "server public key" );
-					// console.log( server_pk );
-					// let user_keypair = nacl.box.keyPair();
-					// console.log( user_keypair );
-					// let shared_secret = nacl.box.before( server_pk , user_keypair.secretKey );
-					// let shared_secret = nacl.scalarMult( user_keypair.secretKey , server_pk );
-					let shared_secret = nacl.scalarMult( secret_key , server_pk );
-					// console.log( "shared secret" );
-					// console.log( shared_secret );
-
-					// Derive a key from the shared secret
-					// let derived_key_old = nacl.hash( shared_secret ).slice( 0 , 32 );
-					let derived_key = await derive_key_hkdf( shared_secret );
-					// console.log( derived_key_old );
-					// console.log( "derived key" );
-					// console.log( derived_key );
-					// return derived_key;
-					resolve( derived_key );
-					return;
-				}
-				catch( error ) { console.log( error ); resolve( false ); return; }
-			});
-		}
-
-		function _post( user ) {
-			return new Promise( async function( resolve , reject ) {
-				try {
-					const user_keypair = nacl.box.keyPair();
-					const derived_key = await get_key( user_keypair.secretKey , user.pk );
-					const user_encrypted = secret_box_encrypt( user.blank , derived_key );
-					const public_key = uint8_array_to_base64( user_keypair.publicKey );
-					post_new_user( { "w": user_encrypted , "pk": public_key } );
-					resolve( true );
-					return;
-				}
-				catch( error ) { console.log( error ); resolve( false ); return; }
-			});
-		}
-		function _on_submit() {
-			return new Promise( async function( resolve , reject ) {
-				try {
-					let user = await get_blank_user();
-					console.log( user );
-					user.blank.username = document.getElementById( "username" ).value.trim();
-					console.log( user );
-					let parent = {
-						first_name: document.getElementById( "parents_first_name" ).value.trim() ,
-						last_name: document.getElementById( "parents_last_name" ).value.trim() ,
-						phone_number: document.getElementById( "phone_number" ).value.trim() ,
-						email_address: document.getElementById( "email_address" ).value.trim() ,
-					}
-					let barcode = document.getElementById( "barcode" ).value.trim();
-					if ( barcode.length > 0 ) {
-						user.blank.barcodes = [];
-						user.blank.barcodes.push( barcode );
-					}
-					user.blank.family_members = [];
-					user.blank.family_members.push( parent );
-					user.blank.family_size = parseInt( document.getElementById( "family_size" ).value.trim() );
-					console.log( user );
-					await _post( user );
-					alert( "new user created" );
-					document.getElementById( "new-user-form" ).reset();
-					document.getElementById( "username" ).focus();
-					resolve( true );
-					return;
-				}
-				catch( error ) { console.log( error ); resolve( false ); return; }
-			});
-		}
-
-		( ()=> {
-
-			document.getElementById( "new-user-form" ).addEventListener( "submit" , async function ( event ) {
-				event.preventDefault();
-				await _on_submit();
-			});
-
-            document.addEventListener( "keypress" , function( event ) {
-                if ( event.key === "Enter" ) {
-                    event.preventDefault();
-                    document.getElementById( "submit-button" ).click();
-                }
-            });
-
-		})();
-	</script>
+  <!-- Load cdn scripts -->
+  <script src="/cdn/jquery.min.js"></script>
+  <script src="/cdn/bootstrap.bundle.min.js"></script>
+  <script src="/cdn/nacl.min.js"></script>
+  <!-- Your encryption and form submission scripts -->
+  <script type="text/javascript">
+    // Encryption and utility functions (unchanged)
+    function convert_bytes_to_hex_string(key_bytes) {
+      return Array.from(key_bytes)
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
+    }
+    function uint8_array_to_base64(uint8Array) {
+      return btoa(String.fromCharCode(...uint8Array));
+    }
+    function base64_to_uint8_array(base64) {
+      return new Uint8Array(atob(base64).split("").map(char => char.charCodeAt(0)));
+    }
+    function get_blank_user() {
+      return new Promise(function(resolve, reject) {
+        try {
+          var currentUrl = window.location.href;
+          var url = currentUrl.replace(/\/new$/, "/blank");
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", url, false);
+          xhr.setRequestHeader("Content-Type", "application/json");
+          xhr.onload = function () {
+            if (xhr.status === 200) {
+              var response = JSON.parse(xhr.responseText);
+              resolve(response);
+              return;
+            } else {
+              console.error("Error fetching blank user:", xhr.statusText);
+              resolve(false);
+              return;
+            }
+          };
+          xhr.onerror = function () {
+            console.error("GET request error");
+            resolve(false);
+            return;
+          };
+          xhr.send();
+        } catch (error) {
+          console.log(error);
+          resolve(false);
+          return;
+        }
+      });
+    }
+    function post_new_user(blank_user) {
+      return new Promise(function(resolve, reject) {
+        try {
+          var current_url = window.location.href;
+          var url = current_url.replace(/\/new$/, "/edit");
+          var xhr = new XMLHttpRequest();
+          xhr.open("POST", url, false);
+          xhr.setRequestHeader("Content-Type", "application/json");
+          xhr.onload = function () {
+            if (xhr.status === 200) {
+              console.log("Successfully posted to:", url);
+              resolve(true);
+              return;
+            } else {
+              console.error("Error posting to:", url, xhr.statusText);
+              resolve(false);
+              return;
+            }
+          };
+          xhr.onerror = function () {
+            console.error("POST request error");
+            resolve(false);
+            return;
+          };
+          var data = JSON.stringify(blank_user);
+          xhr.send(data);
+        } catch (error) {
+          console.log(error);
+          resolve(false);
+          return;
+        }
+      });
+    }
+    function secret_box_encrypt(js_obj, key) {
+      try {
+        let key_bytes = new Uint8Array(key);
+        let key_nonce = new Uint8Array(24);
+        window.crypto.getRandomValues(key_nonce);
+        let json_string = JSON.stringify(js_obj);
+        let js_bytes = new TextEncoder().encode(json_string);
+        let sealed = nacl.secretbox(js_bytes, key_nonce, key_bytes);
+        let combined = new Uint8Array(key_nonce.length + sealed.length);
+        combined.set(key_nonce);
+        combined.set(sealed, key_nonce.length);
+        let result = uint8_array_to_base64(combined);
+        return result;
+      } catch (error) {
+        console.log(error);
+        return false;
+      }
+    }
+    function secret_box_generate_new_key() {
+      return nacl.randomBytes(32);
+    }
+    async function derive_key(shared_secret) {
+      let hash_buffer = await crypto.subtle.digest("SHA-256", shared_secret);
+      return new Uint8Array(hash_buffer).slice(0, 32);
+    }
+    async function derive_key_hkdf(shared_secret) {
+      const salt = new Uint8Array(0);
+      const info = new Uint8Array(0);
+      let key_material = await crypto.subtle.importKey("raw", shared_secret, { name: "HKDF" }, false, ["deriveBits"]);
+      let derived_bits = await crypto.subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt, info }, key_material, 256);
+      return new Uint8Array(derived_bits);
+    }
+    function get_key(secret_key, public_key) {
+      return new Promise(async function(resolve, reject) {
+        try {
+          let server_pk = base64_to_uint8_array(public_key);
+          let shared_secret = nacl.scalarMult(secret_key, server_pk);
+          let derived_key = await derive_key_hkdf(shared_secret);
+          resolve(derived_key);
+          return;
+        } catch (error) {
+          console.log(error);
+          resolve(false);
+          return;
+        }
+      });
+    }
+    function _post(user) {
+      return new Promise(async function(resolve, reject) {
+        try {
+          const user_keypair = nacl.box.keyPair();
+          const derived_key = await get_key(user_keypair.secretKey, user.pk);
+          const user_encrypted = secret_box_encrypt(user.blank, derived_key);
+          const public_key = uint8_array_to_base64(user_keypair.publicKey);
+          post_new_user({ "w": user_encrypted, "pk": public_key });
+          resolve(true);
+          return;
+        } catch (error) {
+          console.log(error);
+          resolve(false);
+          return;
+        }
+      });
+    }
+    async function _on_submit() {
+      try {
+        let user = await get_blank_user();
+        if (!user) {
+          alert("Error retrieving blank user");
+          return false;
+        }
+        // Barcode
+        let barcode = document.getElementById("barcode").value.trim();
+        if (barcode.length > 0) {
+          user.blank.barcodes = [ barcode ];
+        }
+        // Parent Information into identity
+        user.blank.identity = {
+          first_name: document.getElementById("parent_first_name").value.trim(),
+          middle_name: document.getElementById("parent_middle_name").value.trim(),
+          last_name: document.getElementById("parent_last_name").value.trim(),
+          sex: document.getElementById("parent_sex").value,
+          phone_number: document.getElementById("parent_phone_number").value.trim(),
+          email_address: document.getElementById("parent_email_address").value.trim(),
+          date_of_birth: {
+            month: document.getElementById("parent_dob_month").value.trim(),
+            day: parseInt(document.getElementById("parent_dob_day").value.trim()) || 0,
+            year: parseInt(document.getElementById("parent_dob_year").value.trim()) || 0
+          }
+        };
+        user.blank.username = user.blank.identity.first_name + " " + user.blank.identity.last_name;
+        user.blank.name_string = user.blank.username;
+        user.blank.search_string = user.blank.username.toLowerCase();
+        // Spouse Information (if provided)
+        let spouseFirstName = document.getElementById("spouse_first_name").value.trim();
+        let spouseLastName = document.getElementById("spouse_last_name").value.trim();
+        if (spouseFirstName || spouseLastName) {
+          user.blank.spouse = {
+            first_name: spouseFirstName,
+            middle_name: document.getElementById("spouse_middle_name").value.trim(),
+            last_name: spouseLastName,
+            sex: document.getElementById("spouse_sex").value,
+            phone_number: document.getElementById("spouse_phone_number").value.trim(),
+            email_address: document.getElementById("spouse_email_address").value.trim(),
+            date_of_birth: { month: "", day: 0, year: 0 }
+          };
+        }
+        // Children Information
+        user.blank.children = [];
+        let childrenContainer = document.getElementById("children-container");
+        let childEntries = childrenContainer.getElementsByClassName("child-entry");
+        for (let entry of childEntries) {
+          let childFirstName = entry.querySelector(".child_first_name").value.trim();
+          let childAge = parseInt(entry.querySelector(".child_age").value.trim()) || 0;
+          let childSex = entry.querySelector(".child_sex").value;
+          if (childFirstName) {
+            let child = {
+              first_name: childFirstName,
+              middle_name: "",
+              last_name: "",
+              sex: childSex,
+              phone_number: "",
+              email_address: "",
+              date_of_birth: { month: "", day: 0, year: 0 },
+              age: childAge
+            };
+            user.blank.children.push(child);
+          }
+        }
+        // Family Members
+        user.blank.family_members = [];
+        user.blank.family_members.push(user.blank.identity);
+        if (user.blank.spouse && user.blank.spouse.first_name) {
+          user.blank.family_members.push(user.blank.spouse);
+        }
+        let familySize = 1; // parent
+        if (user.blank.spouse && user.blank.spouse.first_name) familySize++;
+        familySize += user.blank.children.length;
+        user.blank.family_size = familySize;
+        await _post(user);
+        alert("New user created");
+        document.getElementById("new-user-form").reset();
+        document.getElementById("children-container").innerHTML = "";
+        addChildEntry();
+        document.getElementById("parent_first_name").focus();
+        return true;
+      } catch (error) {
+        console.log(error);
+        return false;
+      }
+    }
+    document.getElementById("new-user-form").addEventListener("submit", async function(event) {
+      event.preventDefault();
+      await _on_submit();
+    });
+    // Function to add a Child Entry
+    function addChildEntry() {
+      let container = document.getElementById("children-container");
+      let childDiv = document.createElement("div");
+      childDiv.className = "child-entry";
+      childDiv.innerHTML = `
+        <div class="mb-3">
+          <label class="form-label">Child's First Name</label>
+          <input type="text" class="form-control child_first_name">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Age</label>
+          <input type="number" class="form-control child_age" min="0">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Gender</label>
+          <select class="form-select child_sex">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <button type="button" class="btn btn-danger remove-child-button">Remove Child</button>
+        <hr>
+      `;
+      container.appendChild(childDiv);
+      childDiv.querySelector(".remove-child-button").addEventListener("click", function() {
+        childDiv.remove();
+      });
+    }
+    document.getElementById("add-child-button").addEventListener("click", addChildEntry);
+    window.addEventListener("DOMContentLoaded", function() {
+      addChildEntry();
+    });
+    document.addEventListener("keypress", function(event) {
+      if (event.key === "Enter" && event.target.tagName.toLowerCase() !== "textarea") {
+        event.preventDefault();
+      }
+    });
+  </script>
 </body>
 </html>

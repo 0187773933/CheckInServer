@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Admin - New User</title>
+	<script src="/cdn/nacl.min.js"></script>
+</head>
+<body>
+	<h1>Create New User</h1>
+	<form id="new-user-form" action="/user/edit" method="post">
+		<fieldset>
+			<legend>User Information</legend>
+
+			<label for="barcode">Barcode :</label>
+			<input type="text" id="barcode" name="barcode" ><br><br>
+
+			<label for="username">Child's Name :</label>
+			<input type="text" id="username" name="username" ><br><br>
+
+			<label for="parents_first_name">Parent's First Name :</label>
+			<input type="text" id="parents_first_name" name="parents_first_name" ><br><br>
+
+			<label for="parents_last_name">Parent's Last Name :</label>
+			<input type="text" id="parents_last_name" name="parents_last_name" ><br><br>
+
+			<label for="phone_number">Phone Number :</label>
+			<input type="tel" id="phone_number" name="phone_number"><br><br>
+
+			<label for="email_address">Email Address :</label>
+			<input type="email" id="email_address" name="email_address"><br><br>
+
+			<label for="family_size">Family Size:</label>
+			<input type="number" id="family_size" name="family_size" value="1" min="1"><br><br>
+		</fieldset>
+		<br>
+		<button id="submit-button" type="submit">Create User</button>
+	</form>
+
+	<script type="text/javascript">
+		function convert_bytes_to_hex_string( key_bytes ) {
+			let key_string = Array.from( key_bytes ).map( byte => byte.toString( 16 ).padStart( 2 , '0' ) ).join( '' );
+			return key_string;
+		}
+		function uint8_array_to_base64( uint8Array ) {
+			return btoa( String.fromCharCode( ...uint8Array ) );
+		}
+		function base64_to_uint8_array( base64 ) {
+			return new Uint8Array( atob( base64 ).split( "" ).map( char => char.charCodeAt( 0 ) ) );
+		}
+		function get_blank_user() {
+			return new Promise( function( resolve , reject ) {
+				try {
+					var currentUrl = window.location.href;
+					var url = currentUrl.replace( /\/new$/ , "/blank" );
+					var xhr = new XMLHttpRequest();
+					xhr.open( "GET" , url , false );
+					xhr.setRequestHeader( "Content-Type" , "application/json" );
+					xhr.onload = function () {
+						if ( xhr.status === 200 ) {
+							var response = JSON.parse( xhr.responseText );
+							resolve( response );
+							return;
+						} else {
+							console.error( "Error fetching blank user:" , xhr.statusText );
+							resolve( false );
+							return;
+						}
+					};
+					xhr.onerror = function () {
+						console.error( "GET request error" );
+						resolve( false );
+						return;
+					};
+					xhr.send();
+				}
+				catch( error ) { console.log( error ); resolve( false ); return; }
+			});
+		}
+		function post_new_user( blank_user ) {
+			return new Promise( function( resolve , reject ) {
+				try {
+					var current_url = window.location.href;
+					var url = current_url.replace( /\/new$/ , "/edit" );
+					var xhr = new XMLHttpRequest();
+					xhr.open( "POST" , url , false );
+					xhr.setRequestHeader( "Content-Type" , "application/json" );
+					xhr.onload = function () {
+						if ( xhr.status === 200 ) {
+							console.log( "Successfully posted to:" , url );
+							resolve( true );
+							return;
+						} else {
+							console.error( "Error posting to:" , url , xhr.statusText );
+							resolve( false );
+							return;
+						}
+					};
+					xhr.onerror = function () {
+						console.error( "POST request error" );
+						resolve( false );
+						return;
+					};
+					var data = JSON.stringify( blank_user );
+					xhr.send( data );
+				}
+				catch( error ) { console.log( error ); resolve( false ); return; }
+			});
+		}
+		function secret_box_encrypt( js_obj , key ) {
+			try {
+				let key_bytes = new Uint8Array( key );
+				let key_nonce = new Uint8Array( 24 );
+				window.crypto.getRandomValues( key_nonce );
+				let json_string = JSON.stringify( js_obj );
+				let js_bytes = new TextEncoder().encode( json_string );
+				let sealed = nacl.secretbox( js_bytes , key_nonce , key_bytes );
+				let combined = new Uint8Array( key_nonce.length + sealed.length );
+				combined.set( key_nonce );
+				combined.set( sealed , key_nonce.length );
+				let result = uint8_array_to_base64( combined );
+				return result;
+			} catch( error ) { console.log( error ); return false; }
+		}
+
+		function secret_box_generate_new_key() {
+			let key = nacl.randomBytes( 32 );
+			return key;
+		}
+
+		async function derive_key( shared_secret ) {
+			let hash_buffer = await crypto.subtle.digest( "SHA-256" , shared_secret );
+			return new Uint8Array( hash_buffer ).slice( 0 , 32 );
+		}
+
+		async function derive_key_hkdf( shared_secret ) {
+			const salt = new Uint8Array( 0 ); // Optional salt (can be left empty)
+			const info = new Uint8Array( 0 ); // Optional info field
+			let key_material = await crypto.subtle.importKey(
+				"raw" , shared_secret , { name: "HKDF" } , false , [ "deriveBits" ]
+			);
+			let derived_bits = await crypto.subtle.deriveBits(
+				{ name: "HKDF" , hash: "SHA-256" , salt , info } ,
+				key_material , 256
+			);
+			return new Uint8Array( derived_bits );
+		}
+
+		function get_key( secret_key , public_key ) {
+			return new Promise( async function( resolve , reject ) {
+				try {
+					// Kyber Version
+					// console.log( Kyber );
+					// 2.) Generate Cypher-Text and Shared-Secret based on Server's Public Key
+					// let recipient = new Kyber.MlKem1024();
+					// const [ pkR , skR ] = await recipient.generateKeyPair();
+					// const sender = new Kyber.MlKem1024();
+					// const user_kp_uint8 = new Uint8Array( user.kp );
+					// const [ ct , ssS ] = await sender.encap( user_kp_uint8 );
+
+					// 3.) Encrypt User Data with Shared-Secret
+					// const second_key = ssS.slice( 0 , 32 );
+					// let user_encrypted = secret_box_encrypt( user.blank , second_key , user.ecb );
+					// console.log( user_encrypted );
+
+					// X25519 Version
+					// 2.) Generate Cypher-Text and Shared-Secret based on Server's Public Key
+					let server_pk = base64_to_uint8_array( public_key );
+					// console.log( "server public key" );
+					// console.log( server_pk );
+					// let user_keypair = nacl.box.keyPair();
+					// console.log( user_keypair );
+					// let shared_secret = nacl.box.before( server_pk , user_keypair.secretKey );
+					// let shared_secret = nacl.scalarMult( user_keypair.secretKey , server_pk );
+					let shared_secret = nacl.scalarMult( secret_key , server_pk );
+					// console.log( "shared secret" );
+					// console.log( shared_secret );
+
+					// Derive a key from the shared secret
+					// let derived_key_old = nacl.hash( shared_secret ).slice( 0 , 32 );
+					let derived_key = await derive_key_hkdf( shared_secret );
+					// console.log( derived_key_old );
+					// console.log( "derived key" );
+					// console.log( derived_key );
+					// return derived_key;
+					resolve( derived_key );
+					return;
+				}
+				catch( error ) { console.log( error ); resolve( false ); return; }
+			});
+		}
+
+		function _post( user ) {
+			return new Promise( async function( resolve , reject ) {
+				try {
+					const user_keypair = nacl.box.keyPair();
+					const derived_key = await get_key( user_keypair.secretKey , user.pk );
+					const user_encrypted = secret_box_encrypt( user.blank , derived_key );
+					const public_key = uint8_array_to_base64( user_keypair.publicKey );
+					post_new_user( { "w": user_encrypted , "pk": public_key } );
+					resolve( true );
+					return;
+				}
+				catch( error ) { console.log( error ); resolve( false ); return; }
+			});
+		}
+		function _on_submit() {
+			return new Promise( async function( resolve , reject ) {
+				try {
+					let user = await get_blank_user();
+					console.log( user );
+					user.blank.username = document.getElementById( "username" ).value.trim();
+					console.log( user );
+					let parent = {
+						first_name: document.getElementById( "parents_first_name" ).value.trim() ,
+						last_name: document.getElementById( "parents_last_name" ).value.trim() ,
+						phone_number: document.getElementById( "phone_number" ).value.trim() ,
+						email_address: document.getElementById( "email_address" ).value.trim() ,
+					}
+					let barcode = document.getElementById( "barcode" ).value.trim();
+					if ( barcode.length > 0 ) {
+						user.blank.barcodes = [];
+						user.blank.barcodes.push( barcode );
+					}
+					user.blank.family_members = [];
+					user.blank.family_members.push( parent );
+					user.blank.family_size = parseInt( document.getElementById( "family_size" ).value.trim() );
+					console.log( user );
+					await _post( user );
+					alert( "new user created" );
+					document.getElementById( "new-user-form" ).reset();
+					document.getElementById( "username" ).focus();
+					resolve( true );
+					return;
+				}
+				catch( error ) { console.log( error ); resolve( false ); return; }
+			});
+		}
+
+		( ()=> {
+
+			document.getElementById( "new-user-form" ).addEventListener( "submit" , async function ( event ) {
+				event.preventDefault();
+				await _on_submit();
+			});
+
+			document.addEventListener( "keypress" , function( event ) {
+				if ( event.key === "Enter" ) {
+					event.preventDefault();
+					document.getElementById( "submit-button" ).click();
+				}
+			});
+
+		})();
+	</script>
+</body>
+</html>

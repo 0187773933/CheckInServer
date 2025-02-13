@@ -1,214 +1,586 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Admin - Edit User</title>
-	<script src="/cdn/nacl.min.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Edit User</title>
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="/cdn/bootstrap.min.css">
+  <style>
+    /* Hide search results by default */
+    .search-results { 
+      margin-top: 20px; 
+      display: none; 
+    }
+  </style>
+  <script src="/cdn/nacl.min.js"></script>
 </head>
 <body>
-	<h1>Edit User :</h1>
-	<form id="edit-user-form" action="/user/edit" method="post">
-		<fieldset>
-			<legend>User Information</legend>
+  <div class="container my-4">
+    <h1 class="mb-4">Edit User</h1>
+    
+    <!-- Search Section -->
+    <div class="mb-3">
+      <label for="barcode" class="form-label">Search User</label>
+      <div class="input-group">
+        <input type="text" id="barcode" name="barcode" class="form-control" placeholder="Enter barcode, UUID, or name">
+        <button type="button" id="clear-form-button" class="btn btn-outline-secondary">Clear Form</button>
+      </div>
+    </div>
+    
+    <!-- Search Results -->
+    <div id="searchResults" class="search-results">
+      <h2 class="h5">Search Results:</h2>
+      <table id="resultsTable" class="table table-striped">
+        <thead>
+          <tr>
+            <th>Child's Name</th>
+            <th>Parent's Name</th>
+            <th>Phone</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
 
-			<label for="barcode">Barcode :</label>
-			<input type="text" id="barcode" name="barcode" ><br><br>
-
-			<label for="username">Child's Name :</label>
-			<input type="text" id="username" name="username" ><br><br>
-
-			<label for="parents_first_name">Parent's First Name :</label>
-			<input type="text" id="parents_first_name" name="parents_first_name" ><br><br>
-
-			<label for="parents_last_name">Parent's Last Name :</label>
-			<input type="text" id="parents_last_name" name="parents_last_name" ><br><br>
-
-			<label for="phone_number">Phone Number :</label>
-			<input type="tel" id="phone_number" name="phone_number"><br><br>
-
-			<label for="email_address">Email Address :</label>
-			<input type="email" id="email_address" name="email_address"><br><br>
-
-			<label for="family_size">Family Size:</label>
-			<input type="number" id="family_size" name="family_size" value="1" min="1"><br><br>
-		</fieldset>
-
-		<button type="submit">Save User</button>
-	</form>
-
-	<script type="text/javascript">
-		function convert_bytes_to_hex_string( key_bytes ) {
-			let key_string = Array.from( key_bytes ).map( byte => byte.toString( 16 ).padStart( 2 , '0' ) ).join( '' );
-			return key_string;
-		}
-		function uint8_array_to_base64( uint8Array ) {
-			return btoa( String.fromCharCode( ...uint8Array ) );
-		}
-		function base64_to_uint8_array( base64 ) {
-			return new Uint8Array( atob( base64 ).split( "" ).map( char => char.charCodeAt( 0 ) ) );
-		}
-		function get_uuid_in_url() {
-			const url = window.location.href;
-			const uuidPattern = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-			const match = url.match(uuidPattern);
-			const uuid = match ? match[0] : false;
-			return uuid;
-		}
-		function get_user( uuid ) {
-			return new Promise( function( resolve , reject ) {
+    <!-- Edit User Form -->
+    <form id="edit-user-form" action="/user/edit" method="post">
+      <fieldset class="border p-3 mb-3">
+        <!-- <legend class="w-auto px-2">User Information</legend> -->
+        <div class="row">
+          <!-- Left Column: Barcode & Children Information -->
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="form_barcode" class="form-label">Barcode</label>
+              <input type="text" id="form_barcode" name="barcode" class="form-control">
+            </div>
+            <h2 class="h5">Children</h2>
+            <div id="children-container"></div>
+            <div class="mb-3">
+              <button type="button" id="add-child-button" class="btn btn-secondary">Add Child</button>
+            </div>
+          </div>
+          <!-- Right Column: Parent Information -->
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="parents_first_name" class="form-label">Parent's First Name</label>
+              <input type="text" id="parents_first_name" name="parents_first_name" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label for="parents_last_name" class="form-label">Parent's Last Name</label>
+              <input type="text" id="parents_last_name" name="parents_last_name" class="form-control">
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="phone_number" class="form-label">Phone Number</label>
+                <input type="tel" id="phone_number" name="phone_number" class="form-control">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="email_address" class="form-label">Email Address</label>
+                <input type="email" id="email_address" name="email_address" class="form-control">
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="family_size" class="form-label">Family Size</label>
+              <input type="number" id="family_size" name="family_size" class="form-control" value="1" min="1">
+            </div>
+          </div>
+        </div>
+      </fieldset>
+      <button type="submit" class="btn btn-primary">Save User</button>
+    </form>
+  </div>
+  
+  <!-- Bootstrap Bundle with Popper & jQuery -->
+  <script src="/cdn/bootstrap.bundle.min.js"></script>
+  <script src="/cdn/jquery.min.js"></script>
+  
+  <script type="text/javascript">
+    // --- Utility and Encryption Functions ---
+    const uuid_v4_regex = /^[0-9A-F]{8}-[0-9A-F]{4}-[4][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i;
+    function is_uuid(str) { return uuid_v4_regex.test(str); }
+    const barcode_regex = /^\d+$/;
+    function is_barcode(str) { return barcode_regex.test(str); }
+    
+    // Updated populate_form function: now checks and wraps children in an array if needed.
+    function populate_form(user) {
+      window.ACTIVE_USER = user;
+      window.USER.BLANK = user;
+      window.USER.PK = user.pk;
+      document.getElementById("form_barcode").value = (user.barcodes && user.barcodes[0]) || '';
+      
+      // Populate Parent info (assumed to be the first family member)
+      if (user.family_members && user.family_members[0]) {
+        const parent = user.family_members[0];
+        document.getElementById("parents_first_name").value = parent.first_name || '';
+        document.getElementById("parents_last_name").value = parent.last_name || '';
+        document.getElementById("phone_number").value = parent.phone_number || '';
+        document.getElementById("email_address").value = parent.email_address || '';
+      }
+      document.getElementById("family_size").value = user.family_size || 1;
+      
+      // Populate Children info if available.
+      const childrenContainer = document.getElementById("children-container");
+      childrenContainer.innerHTML = '';
+      let children = user.children;
+      if (children) {
+        // Ensure children is an array.
+        if (!Array.isArray(children)) {
+          children = [ children ];
+        }
+      }
+      if (children && children.length > 0) {
+        children.forEach(child => addChildEntry(child));
+      } else {
+        // If no children exist, add one default empty child entry.
+        addChildEntry();
+      }
+    }
+    
+    // Display search results in a Bootstrap table.
+    function display_search_results(users) {
+      if (!users || users.length === 0) return;
+      if (users.length === 1) {
+        document.getElementById("searchResults").style.display = "none";
+        populate_form(users[0]);
+        return;
+      }
+      const resultsBody = document.getElementById("resultsBody");
+      resultsBody.innerHTML = '';
+      document.getElementById("searchResults").style.display = "block";
+      users.forEach((user, index) => {
+        const row = document.createElement("tr");
+        const parent = (user.family_members && user.family_members[0]) || {};
+        row.innerHTML = `
+          <td>${user.username || ''}</td>
+          <td>${parent.first_name || ''} ${parent.last_name || ''}</td>
+          <td>${parent.phone_number || ''}</td>
+          <td>
+            <button class="btn btn-sm btn-success select-btn" onclick="select_user(${index})">Select</button>
+          </td>
+        `;
+        row.addEventListener('click', () => select_user(index));
+        resultsBody.appendChild(row);
+      });
+      window.searchResults = users;
+    }
+    
+    function select_user(index) {
+      if (!window.searchResults || !window.searchResults[index]) return;
+      populate_form(window.searchResults[index]);
+      document.getElementById("searchResults").style.display = "none";
+    }
+    
+    function convert_bytes_to_hex_string(key_bytes) {
+      return Array.from(key_bytes)
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
+    }
+    function uint8_array_to_base64(uint8Array) {
+      return btoa(String.fromCharCode(...uint8Array));
+    }
+    function base64_to_uint8_array(base64) {
+      base64 = base64.replace(/-/g, "+").replace(/_/g, "/");
+      while (base64.length % 4 !== 0) {
+        base64 += "=";
+      }
+      return new Uint8Array(atob(base64).split("").map(char => char.charCodeAt(0)));
+    }
+    
+    function get_uuid_in_url() {
+      const url = window.location.href;
+      const uuidPattern = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+      const match = url.match(uuidPattern);
+      return match ? match[0] : false;
+    }
+    
+    function get_user(uuid) {
+      return new Promise(function(resolve, reject) {
+        try {
+          var currentUrl = window.location.href;
+          var url = currentUrl.replace(/\/edit\//, "/get/");
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", url, false);
+          xhr.setRequestHeader("Content-Type", "application/json");
+          xhr.onload = function() {
+            if (xhr.status === 200) {
+              var response = JSON.parse(xhr.responseText);
+              resolve(response);
+            } else {
+              console.error("Error fetching user:", xhr.statusText);
+              resolve(false);
+            }
+          };
+          xhr.onerror = function() {
+            console.error("GET request error");
+            resolve(false);
+          };
+          xhr.send();
+        } catch (error) { 
+          console.log(error); 
+          resolve(false); 
+        }
+      });
+    }
+    
+    function get_user_by_barcode(barcode) {
+      return new Promise(function(resolve, reject) {
+        try {
+          var currentUrl = window.location.href;
+          var url = currentUrl.replace(/\/edit$/, "/get/barcode/" + barcode);
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", url, false);
+          xhr.setRequestHeader("Content-Type", "application/json");
+          xhr.onload = function() {
+            if (xhr.status === 200) {
+              var response = JSON.parse(xhr.responseText);
+              resolve(response);
+            } else {
+              console.error("Error fetching user:", xhr.statusText);
+              resolve(false);
+            }
+          };
+          xhr.onerror = function() {
+            console.error("GET request error");
+            resolve(false);
+          };
+          xhr.send();
+        } catch (error) { 
+          console.log(error); 
+          resolve(false); 
+        }
+      });
+    }
+		function get_pk() {
+			return new Promise(function(resolve, reject) {
 				try {
 					var currentUrl = window.location.href;
-					var url = currentUrl.replace( /\/edit\// , "/get/" );
+					var url = currentUrl.replace(/\/user\/edit/, "/pk");
 					var xhr = new XMLHttpRequest();
-					xhr.open( "GET" , url , false );
-					xhr.setRequestHeader( "Content-Type" , "application/json" );
-					xhr.onload = function () {
-						if ( xhr.status === 200 ) {
-							var response = JSON.parse( xhr.responseText );
-							resolve( response );
-							return;
+					xhr.open("GET", url, false);
+					xhr.setRequestHeader("Content-Type", "application/json");
+					xhr.onload = function() {
+						if (xhr.status === 200) {
+							var response = JSON.parse(xhr.responseText);
+							if ( response[ "pk" ] ) {
+								resolve(response[ "pk" ]);
+							} else {
+								resolve(false);
+							}
 						} else {
-							console.error( "Error fetching blank user:" , xhr.statusText );
-							resolve( false );
-							return;
+							console.error("Error fetching user:", xhr.statusText);
+							resolve(false);
 						}
 					};
-					xhr.onerror = function () {
-						console.error( "GET request error" );
-						resolve( false );
-						return;
+					xhr.onerror = function() {
+						console.error("GET request error");
+						resolve(false);
 					};
 					xhr.send();
+				} catch (error) { 
+					console.log(error); 
+					resolve(false); 
 				}
-				catch( error ) { console.log( error ); resolve( false ); return; }
 			});
 		}
-		function post_edit_user( user ) {
-			return new Promise( function( resolve , reject ) {
-				try {
-					var current_url = window.location.href;
-					var url = current_url.replace( /\/new$/ , "/edit" );
-					url = url.replace( /\/edit\/[0-9a-fA-F-]+$/ , "/edit" );
-					var xhr = new XMLHttpRequest();
-					xhr.open( "POST" , url , false );
-					xhr.setRequestHeader( "Content-Type" , "application/json" );
-					xhr.onload = function () {
-						if ( xhr.status === 200 ) {
-							console.log( "Successfully posted to:" , url );
-							resolve( true );
-							return;
-						} else {
-							console.error( "Error posting to:" , url , xhr.statusText );
-							resolve( false );
-							return;
-						}
-					};
-					xhr.onerror = function () {
-						console.error( "POST request error" );
-						resolve( false );
-						return;
-					};
-					var data = JSON.stringify( user );
-					xhr.send( data );
-				}
-				catch( error ) { console.log( error ); resolve( false ); return; }
-			});
-		}
-		async function derive_key_hkdf( shared_secret ) {
-			const salt = new Uint8Array( 0 ); // Optional salt (can be left empty)
-			const info = new Uint8Array( 0 ); // Optional info field
-			let key_material = await crypto.subtle.importKey(
-				"raw" , shared_secret , { name: "HKDF" } , false , [ "deriveBits" ]
-			);
-			let derived_bits = await crypto.subtle.deriveBits(
-				{ name: "HKDF" , hash: "SHA-256" , salt , info } ,
-				key_material , 256
-			);
-			return new Uint8Array( derived_bits );
-		}
-		function secret_box_encrypt( js_obj , key ) {
-			try {
-				let key_bytes = new Uint8Array( key );
-				let key_nonce = new Uint8Array( 24 );
-				window.crypto.getRandomValues( key_nonce );
-				let json_string = JSON.stringify( js_obj );
-				let js_bytes = new TextEncoder().encode( json_string );
-				let sealed = nacl.secretbox( js_bytes , key_nonce , key_bytes );
-				let combined = new Uint8Array( key_nonce.length + sealed.length );
-				combined.set( key_nonce );
-				combined.set( sealed , key_nonce.length );
-				let result = uint8_array_to_base64( combined );
-				return result;
-			} catch( error ) { console.log( error ); return false; }
-		}
-		function get_key( secret_key , public_key ) {
-			return new Promise( async function( resolve , reject ) {
-				try {
-					let server_pk = base64_to_uint8_array( public_key );
-					let shared_secret = nacl.scalarMult( secret_key , server_pk );
-					let derived_key = await derive_key_hkdf( shared_secret );
-					resolve( derived_key );
-					return;
-				}
-				catch( error ) { console.log( error ); resolve( false ); return; }
-			});
-		}
-		function _post( user ) {
-			return new Promise( async function( resolve , reject ) {
-				try {
-					const user_keypair = nacl.box.keyPair();
-					const derived_key = await get_key( user_keypair.secretKey , window.USER.PK );
-					const user_encrypted = secret_box_encrypt( user , derived_key );
-					const public_key = uint8_array_to_base64( user_keypair.publicKey );
-					post_edit_user( { "w": user_encrypted , "pk": public_key } );
-					resolve( true );
-					return;
-				}
-				catch( error ) { console.log( error ); resolve( false ); return; }
-			});
-		}
-		( async ()=> {
-			window.USER = {};
-			window.USER.UUID = get_uuid_in_url();
-			let user = await get_user();
-			if ( !user ) { alert( "Error fetching user" ); return; }
-			console.log( user );
-			window.USER.BLANK = user.user;
-			window.USER.PK = user.pk;
-			let edit_form = document.getElementById( "edit-user-form" );
-			document.getElementById( "username" ).value = user.user.username;
-			if ( user.user.family_members.length > 0 ) {
-				document.getElementById( "parents_first_name" ).value = user.user.family_members[ 0 ].first_name;
-				document.getElementById( "parents_last_name" ).value = user.user.family_members[ 0 ].last_name;
-				document.getElementById( "phone_number" ).value = user.user.family_members[ 0 ].phone_number;
-				document.getElementById( "email_address" ).value = user.user.family_members[ 0 ].email_address;
-			}
-			if ( user.user.barcodes.length > 0 ) {
-				document.getElementById( "barcode" ).value = user.user.barcodes[ 0 ];
-			}
-			document.getElementById( "family_size" ).value = user.user.family_size;
-			edit_form.addEventListener( "submit" , async function ( event ) {
-				event.preventDefault();
-				window.USER.BLANK.username = document.getElementById( "username" ).value.trim();
-				let parent = {
-					first_name: document.getElementById( "parents_first_name" ).value.trim() ,
-					last_name: document.getElementById( "parents_last_name" ).value.trim() ,
-					phone_number: document.getElementById( "phone_number" ).value.trim() ,
-					email_address: document.getElementById( "email_address" ).value.trim() ,
-				}
-				let barcode = document.getElementById( "barcode" ).value.trim();
-				if ( barcode.length > 0 ) {
-					window.USER.BLANK.barcodes = [];
-					window.USER.BLANK.barcodes.push( barcode );
-				}
-				window.USER.BLANK.family_members = [];
-				window.USER.BLANK.family_members.push( parent );
-				window.USER.BLANK.family_size = parseInt( document.getElementById( "family_size" ).value.trim() );
-				await _post( window.USER.BLANK );
-				alert( "user edited" );
-			});
-		})();
-	</script>
+    function fuzzy_search_user(input_text) {
+      return new Promise(function(resolve, reject) {
+        try {
+          if (input_text === "") { resolve(false); return; }
+          var currentUrl = window.location.href;
+          var url = currentUrl.replace(/\/edit$/, "/search/" + encodeURIComponent(input_text));
+          console.log(url);
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", url, false);
+          xhr.setRequestHeader("Content-Type", "application/json");
+          xhr.onload = function() {
+            if (xhr.status === 200) {
+              var response = JSON.parse(xhr.responseText);
+              resolve(response);
+            } else {
+              console.error("Error fetching user:", xhr.statusText);
+              resolve(false);
+            }
+          };
+          xhr.onerror = function() {
+            console.error("GET request error");
+            resolve(false);
+          };
+          xhr.send();
+        } catch (error) { 
+          console.log(error); 
+          resolve(false); 
+        }
+      });
+    }
+    
+    function post_edit_user(user) {
+      return new Promise(function(resolve, reject) {
+        try {
+          var current_url = window.location.href;
+          var url = current_url.replace(/\/edit$/, "/edit");
+          url = url.replace(/\/edit\/[0-9a-fA-F-]+$/, "/edit");
+          var xhr = new XMLHttpRequest();
+          xhr.open("POST", url, false);
+          xhr.setRequestHeader("Content-Type", "application/json");
+          xhr.onload = function() {
+            if (xhr.status === 200) {
+              console.log("Successfully posted to:", url);
+              resolve(true);
+            } else {
+              console.error("Error posting to:", url, xhr.statusText);
+              resolve(false);
+            }
+          };
+          xhr.onerror = function() {
+            console.error("POST request error");
+            resolve(false);
+          };
+          var data = JSON.stringify(user);
+          xhr.send(data);
+        } catch (error) { 
+          console.log(error); 
+          resolve(false); 
+        }
+      });
+    }
+    
+    function debounce_input(func, delay) {
+      let timer;
+      return function(...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => func.apply(this, args), delay);
+      };
+    }
+    
+    function detect_input_type(typed_input) {
+      if (is_uuid(typed_input)) return "uuid";
+      if (is_barcode(typed_input)) return "barcode";
+      return "string";
+    }
+    
+    function search_user(input_type, input) {
+      return new Promise(async function(resolve, reject) {
+        try {
+          if (input_type === "uuid") {
+            console.log("searching uuid", input);
+            let user = await get_user(input);
+            resolve([ user.user ]);
+            return;
+          }
+          if (input_type === "barcode") {
+            console.log("searching barcode", input);
+            let user = await get_user_by_barcode(input);
+            resolve([ user.user ]);
+            return;
+          }
+          let potential_users = await fuzzy_search_user(input);
+          resolve(potential_users.users);
+        } catch (error) { 
+          console.log(error); 
+          resolve(false); 
+        }
+      });
+    }
+    
+    async function derive_key_hkdf(shared_secret) {
+      const salt = new Uint8Array(0);
+      const info = new Uint8Array(0);
+      let key_material = await crypto.subtle.importKey("raw", shared_secret, { name: "HKDF" }, false, ["deriveBits"]);
+      let derived_bits = await crypto.subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt, info }, key_material, 256);
+      return new Uint8Array(derived_bits);
+    }
+    
+    function secret_box_encrypt(js_obj, key) {
+      try {
+        let key_bytes = new Uint8Array(key);
+        let key_nonce = new Uint8Array(24);
+        window.crypto.getRandomValues(key_nonce);
+        let json_string = JSON.stringify(js_obj);
+        let js_bytes = new TextEncoder().encode(json_string);
+        let sealed = nacl.secretbox(js_bytes, key_nonce, key_bytes);
+        let combined = new Uint8Array(key_nonce.length + sealed.length);
+        combined.set(key_nonce);
+        combined.set(sealed, key_nonce.length);
+        let result = uint8_array_to_base64(combined);
+        return result;
+      } catch (error) { 
+        console.log(error); 
+        return false; 
+      }
+    }
+    
+    function get_key(secret_key, public_key) {
+      return new Promise(async function(resolve, reject) {
+        try {
+          if (!public_key) {
+            console.log("No public key available – fetching now.");
+            public_key = await get_pk();
+            window.USER.PK = public_key;
+          }
+          let server_pk = base64_to_uint8_array(public_key);
+          let shared_secret = nacl.scalarMult(secret_key, server_pk);
+          let derived_key = await derive_key_hkdf(shared_secret);
+          resolve(derived_key);
+        } catch (error) { 
+          console.log(error); 
+          resolve(false); 
+        }
+      });
+    }
+    
+    function _post(user) {
+      return new Promise(async function(resolve, reject) {
+        try {
+          const user_keypair = nacl.box.keyPair();
+          const derived_key = await get_key(user_keypair.secretKey, window.USER.PK);
+          const user_encrypted = secret_box_encrypt(user, derived_key);
+          const public_key = uint8_array_to_base64(user_keypair.publicKey);
+          post_edit_user({ "w": user_encrypted, "pk": public_key });
+          resolve(true);
+        } catch (error) { 
+          console.log(error); 
+          resolve(false); 
+        }
+      });
+    }
+    
+    // Gather current form values: parent info and children entries.
+    function set_user_to_current_form() {
+      window.USER.BLANK.family_members = [];
+      let parent = {
+        first_name: document.getElementById("parents_first_name").value.trim(),
+        last_name: document.getElementById("parents_last_name").value.trim(),
+        phone_number: document.getElementById("phone_number").value.trim(),
+        email_address: document.getElementById("email_address").value.trim(),
+      };
+      window.USER.BLANK.family_members.push(parent);
+      
+      let barcode = document.getElementById("form_barcode").value.trim();
+      if (barcode.length > 0) {
+        window.USER.BLANK.barcodes = [ barcode ];
+      }
+      
+      // Collect children information.
+      window.USER.BLANK.children = [];
+      const childrenContainer = document.getElementById("children-container");
+      const childEntries = childrenContainer.getElementsByClassName("child-entry");
+      Array.from(childEntries).forEach(entry => {
+        let childFirstName = entry.querySelector(".child_first_name").value.trim();
+        let childAge = parseInt(entry.querySelector(".child_age").value.trim()) || 0;
+        let childSex = entry.querySelector(".child_sex").value;
+        if (childFirstName) {
+          let child = {
+            first_name: childFirstName,
+            middle_name: "",
+            last_name: "",
+            sex: childSex,
+            phone_number: "",
+            email_address: "",
+            date_of_birth: { month: "", day: 0, year: 0 },
+            age: childAge
+          };
+          window.USER.BLANK.children.push(child);
+        }
+      });
+      
+      // Update family size: parent + children.
+      let familySize = 1 + window.USER.BLANK.children.length;
+      window.USER.BLANK.family_size = familySize;
+    }
+    
+    // Function to add a child entry.
+    // If a 'child' object is passed, prepopulate the fields.
+    function addChildEntry(child = {}) {
+      let container = document.getElementById("children-container");
+      let childDiv = document.createElement("div");
+      childDiv.className = "child-entry border p-2 mb-2";
+      childDiv.innerHTML = `
+        <div class="mb-2">
+          <label class="form-label">Child's First Name</label>
+          <input type="text" class="form-control child_first_name" value="${child.first_name || ''}">
+        </div>
+        <div class="row mb-2">
+          <div class="col">
+            <label class="form-label">Age</label>
+            <input type="number" class="form-control child_age" min="0" value="${child.age || ''}">
+          </div>
+          <div class="col">
+            <label class="form-label">Gender</label>
+            <select class="form-select child_sex">
+              <option value="male" ${child.sex === "male" ? "selected" : ""}>Male</option>
+              <option value="female" ${child.sex === "female" ? "selected" : ""}>Female</option>
+              <option value="other" ${child.sex === "other" ? "selected" : ""}>Other</option>
+            </select>
+          </div>
+        </div>
+        <button type="button" class="btn btn-danger btn-sm remove-child-button">Remove Child</button>
+      `;
+      container.appendChild(childDiv);
+      childDiv.querySelector(".remove-child-button").addEventListener("click", function() {
+        childDiv.remove();
+      });
+    }
+    
+    // Debounce function for search input.
+    const handle_input = debounce_input(async () => {
+      let input = document.getElementById("barcode").value.trim();
+      let input_type = detect_input_type(input);
+      console.log(input_type, input);
+      let users = await search_user(input_type, input);
+      console.log(users);
+      display_search_results(users);
+    }, 300);
+    
+    // Main initialization.
+    (async () => {
+      const barcode_input = document.getElementById("barcode");
+      barcode_input.focus();
+      const edit_form = document.getElementById("edit-user-form");
+      window.USER = {};
+      window.USER.BLANK = {};
+      window.USER.UUID = get_uuid_in_url();
+      
+      // If a UUID is present in the URL, fetch and populate the form.
+      if (window.USER.UUID) {
+        console.log("Found UUID:", window.USER.UUID);
+        let user = await get_user();
+        if (user) {
+          window.USER.BLANK = user.user;
+          window.USER.PK = user.pk;
+          populate_form(user.user);
+        } else {
+          alert("Error fetching existing user");
+          console.log(user);
+        }
+      } else {
+        // If no user is loaded, add one default child entry.
+        addChildEntry();
+      }
+      
+      barcode_input.addEventListener("input", handle_input);
+      
+      edit_form.addEventListener("submit", async function(event) {
+        event.preventDefault();
+        set_user_to_current_form();
+        console.log("User to submit:", window.USER.BLANK);
+        await _post(window.USER.BLANK);
+        alert("User edited");
+      });
+      
+      let clear_form_button = document.getElementById("clear-form-button");
+      clear_form_button.addEventListener("click", function() {
+        edit_form.reset();
+        window.USER.BLANK = {};
+        window.USER.BLANK.family_members = [{}];
+        document.getElementById("children-container").innerHTML = '';
+        addChildEntry();
+      });
+      
+      // Add Child button handler.
+      document.getElementById("add-child-button").addEventListener("click", addChildEntry);
+    })();
+  </script>
 </body>
 </html>
