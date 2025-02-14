@@ -547,6 +547,7 @@ func UserSearch( s *server.Server ) fiber.Handler {
 		}
 
 		var matched_users []user.User
+		var already_seen = make(map[string]bool)
 		// Retrieve the encrypted users from the DB and decrypt them.
 		s.DB.View(func(tx *bolt.Tx) error {
 			usersBlank := tx.Bucket([]byte("users-blank"))
@@ -559,7 +560,11 @@ func UserSearch( s *server.Server ) fiber.Handler {
 				} else {
 					parentID = hit.ID
 				}
-
+				if already_seen[parentID] {
+					continue
+				} else {
+					already_seen[parentID] = true
+				}
 				encryptedKey := usersBlank.Get([]byte(parentID))
 				// Make sure encryptedKey is valid before proceeding.
 				if encryptedKey == nil {
