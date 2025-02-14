@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 	"strings"
+	"flag"
 	bolt "github.com/boltdb/bolt"
 	fiber "github.com/gofiber/fiber/v2"
 	cors "github.com/gofiber/fiber/v2/middleware/cors"
@@ -39,7 +40,16 @@ func SetupCloseHandler() {
 }
 
 func main() {
+	var GenConfig bool
+	flag.BoolVar( &GenConfig , "gen-config" , false , "Generate configuration file" )
+	flag.BoolVar( &GenConfig , "g" , false , "Generate configuration file (shorthand)" )
+	flag.Parse()
 	config := server_utils.GetConfig()
+	if GenConfig {
+		server_utils.GenerateNewKeysWrite( &config )
+		panic( "Generated Config" )
+		return
+	}
 	// utils.GenerateNewKeysWrite( &config )
 	defer server_utils.SetupStackTraceReport()
 	logger.New( &config.Log )
