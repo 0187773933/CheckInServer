@@ -655,8 +655,8 @@ func UserCheckIn( s *server.Server ) fiber.Handler {
 			fmt.Println( decrypted_user )
 
 			// Make Parents Tickets
-			// print_ticket_parents := decrypted_user.GetFamilyName()
-			parents_ticket = decrypted_user.GetLastName()
+			parents_ticket = decrypted_user.GetFamilyName()
+			// parents_ticket = decrypted_user.GetLastName()
 			// print_tickets = append( print_tickets , print_ticket_parents )
 			// Make Included Child Tickets
 			for _ , child := range decrypted_user.Children {
