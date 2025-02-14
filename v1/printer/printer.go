@@ -186,7 +186,7 @@ func Print(printerName, name string) {
 
 	// For rotated text, let the available width be nearly the page height.
 	const maxTextWidth = pageHeight - 0.2
-	const candidateFontSize = 200.0
+	const candidateFontSize = 40.0
 
 	maxFontSize := findMaxFontSize(pdf, name, "ComicNeue", maxTextWidth, candidateFontSize)
 
@@ -261,7 +261,7 @@ func PrintTwo(printerName, name, extraString string) {
 	pivotY := pageCenterY
 
 	const maxTextWidth = pageHeight - 0.2
-	const candidateFontSize = 200.0
+	const candidateFontSize = 40.0
 
 	mainFontSize := findMaxFontSize(pdf, name, "ComicNeue", maxTextWidth, candidateFontSize)
 	extraFontSizeCandidate := findMaxFontSize(pdf, extraString, "ComicNeue", maxTextWidth, candidateFontSize)
