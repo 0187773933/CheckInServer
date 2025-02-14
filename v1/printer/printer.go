@@ -129,7 +129,7 @@ func add_rotated_image(pdf *gofpdf.Fpdf, imagePath string, x, y, width, height, 
 }
 
 func PrintWindows( printer_name string , pdf_file_path string ) {
-	sumatra_file_path  , _ := filepath.Abs( "./v1/embed/misc/SumatraPDF.exe" )
+	sumatra_file_path  , _ := filepath.Abs( "./v1/embed/windows/SumatraPDF.exe" )
 	// sumatra_file_path := "SumatraPDF.exe"
 	args := []string{ sumatra_file_path , "-print-to" , printer_name , pdf_file_path }
 	cmd := exec.Command( args[ 0 ] , args[ 1 : ]... )
