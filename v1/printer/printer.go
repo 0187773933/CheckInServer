@@ -205,7 +205,7 @@ func Print( printer_name string , name string ) {
 	// font_abs_path , _ := filepath.Abs( font_path )
 
 
-	pdf.AddUTF8Font( "ComicNeue" , "" , "./v1/embed/ComicNeue-Regular.ttf" )
+	pdf.AddUTF8Font( "ComicNeue" , "" , "./v1/embed/fonts/ComicNeue-Regular.ttf" )
 	// pdf.AddUTF8FontFromBytes( "ComicNeue" , "" , font_bytes )
 
 
