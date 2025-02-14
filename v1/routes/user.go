@@ -686,9 +686,14 @@ func UserCheckIn( s *server.Server ) fiber.Handler {
 			return nil
 		})
 
+		font_path := "fonts/ComicNeue-Regular.ttf"
+		font_file , _ := s.EMBEDED.Open( font_path )
+		defer font_file.Close()
+		font_bytes , _ := io.ReadAll( font_file )
+
 		for _ , print_string := range print_tickets {
 			fmt.Println( "printing" , print_string )
-			printer.Print( s.Config.MiscMap[ "printer_name" ] , s.Config.MiscMap[ "font_path" ] , print_string )
+			printer.Print( s.Config.MiscMap[ "printer_name" ] , font_bytes , s.Config.MiscMap[ "font_path" ] )
 		}
 
 		return c.JSON( fiber.Map{

@@ -173,7 +173,7 @@ func PrintLinux( printer_name string , pdf_file_path string ) {
 	fmt.Println( "todo" )
 }
 
-func Print( printer_name string , font_path string , name string ) {
+func Print( printer_name string , font_bytes []byte , name string ) {
 
 	page_width := 2.25
 	page_heigth := 4.0
@@ -203,7 +203,11 @@ func Print( printer_name string , font_path string , name string ) {
 	pdf.SetMargins( 0.1 , 0.1 , 0.1 ) // left , top , right
 	pdf.AddPage()
 	// font_abs_path , _ := filepath.Abs( font_path )
-	pdf.AddUTF8Font( "ComicNeue" , "" , "./v1/printer/ComicNeue-Regular.ttf" )
+
+
+	// pdf.AddUTF8Font( "ComicNeue" , "" , "./v1/printer/ComicNeue-Regular.ttf" )
+	pdf.AddUTF8FontFromBytes( "ComicNeue" , "" , font_bytes )
+
 
 	add_rotated_centered_text( pdf , name , "ComicNeue" , 40 , ( ( page_center_x - ( page_center_x / 2 ) ) + ( page_center_x / 4 ) ) )
 	// add_rotated_image( pdf , "icon.png" , ( page_center_x - icon_center_x - 0.1 ) , ( page_center_y + icon_center_y ) , icon_size_x , icon_size_y , 90 )
