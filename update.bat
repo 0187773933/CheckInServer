@@ -26,7 +26,9 @@ if exist main.exe (
 )
 
 :: Pull latest changes
-git pull origin main
+git pull origin master
+
+go mod tidy
 
 :: Build the Go project for Windows
 go build -o main.exe

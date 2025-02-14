@@ -1,0 +1,77 @@
+name: CheckInServer
+port: "6996"
+urls:
+    local: http://localhost
+    private: http://192.168.4.23
+    public: http://192.168.4.23
+    admin_login: asdfasf
+    admin_prefix: asdfasq23
+    login: asdfasdfq34523sdf
+    prefix:
+cookie:
+    user:
+        name: check-in-server
+        message: er123asdfasdf
+    admin:
+        name: check-in-server-admin
+        message: qasdfasdfasdf
+    secret: asdfasdf_base64=
+creds:
+    api_key: 4356354213452234
+    admin_username: 354bawe23413
+    admin_password: 345124351235
+    encryption_key: 13456123461234123dsdgasdf
+    openai_key: ""
+time_zone: "America/New_York"
+allow_origins: []
+save_files_path: /Users/morpheous/WORKSPACE/GO/CheckInServer/SAVE_FILES
+bolt:
+    path: save.db
+    prefix: 53144
+redis:
+    host: ""
+    port: ""
+    password: ""
+    number: 1
+    prefix: 234523
+    enabled: false
+docker:
+    name: private-check-in-server
+git:
+    url: https://github.com/0187773933/CheckInServer.git
+    ssh_url: git@github.com:0187773933/CheckInServer.git
+go:
+    version: 1.22.2
+    os: linux
+    arch: amd64
+log:
+    server_name: ""
+    server_base_url: ""
+    server_live_url: ""
+    server_private_url: ""
+    server_public_url: ""
+    server_port: ""
+    server_api_key: ""
+    server_login_url_prefix: ""
+    server_url_prefix: ""
+    server_cookie_name: ""
+    server_cookie_secret: ""
+    server_cookie_admin_secret_message: ""
+    server_cookie_secret_message: ""
+    server_allow_origins: ""
+    admin_username: ""
+    admin_password: ""
+    time_zone: America/New_York
+    save_files_path: ""
+    bolt_db_path: log.db
+    encryption_key: 12353asfq2351235asdfasdfq23541253
+    log_level: debug
+    log_key: 3245asdf
+misc_map:
+    bleve_path: "bleve.index"
+    printer_page_width: 2.25
+    printer_page_height: 4.0
+    printer_name: "DYMO LabelWriter 450 Turbo"
+    logo_file_path: "./v1/server/cdn/logo.png"
+    font_path: "./ComicNeue-Regular.ttf"
+    mode: "dev" # dev, prod

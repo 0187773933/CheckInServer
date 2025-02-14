@@ -495,7 +495,7 @@ func UserGet( s *server.Server ) fiber.Handler {
 // 	}
 // }
 
-func UserSearch(s *server.Server) fiber.Handler {
+func UserSearch( s *server.Server ) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		searchTerm := c.Params("search_term")
 		blevePath := filepath.Join(s.Config.SaveFilesPath, s.Config.MiscMap["bleve_path"])
@@ -624,14 +624,6 @@ func UserGetByBarcode( s *server.Server ) fiber.Handler {
 
 func UserCheckIn( s *server.Server ) fiber.Handler {
 	return func( c *fiber.Ctx ) error {
-		// body := c.Body()
-		// var response map[string]interface{}
-		// if err := json.Unmarshal( body , &response ); err != nil {
-		// 	fmt.Println( "Error parsing JSON:", err)
-		// 	return c.Status( fiber.StatusBadRequest ).JSON( fiber.Map{
-		// 		"error": "Failed to parse JSON request",
-		// 	})
-		// }
 
 		var check_in user.CheckIn
 		if err := c.BodyParser(&check_in); err != nil {
