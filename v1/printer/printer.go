@@ -25,43 +25,6 @@ import (
 
 // https://github.com/0187773933/MastersCloset/blob/master/v1/printer/printer.go
 
-// //go:embed SumatraPDF.exe
-// var sumatra_binary []byte
-
-// // Define the known location to store SumatraPDF.exe
-// func get_persistent_sumatra_path() string {
-// 	appData := os.Getenv( "APPDATA" ) // Example: C:\Users\Username\AppData\Roaming
-// 	if appData == "" {
-// 		appData = "C:\\ProgramData" // Fallback if APPDATA is not set
-// 	}
-// 	dirPath := filepath.Join( appData , "CheckInServer" ) // Custom folder for the application
-// 	exePath := filepath.Join( dirPath , "SumatraPDF.exe" )
-// 	return exePath
-// }
-
-// // Ensure SumatraPDF.exe is present in the known location
-// func EnsureSumatraPDF() (string, error) {
-// 	exePath := get_persistent_sumatra_path()
-
-// 	// Check if the file already exists
-// 	if _, err := os.Stat(exePath); err == nil {
-// 		return exePath, nil // File already exists, no need to extract again
-// 	}
-
-// 	// Create directory if it doesn't exist
-// 	if err := os.MkdirAll( filepath.Dir(exePath), 0755); err != nil {
-// 		return "", err
-// 	}
-
-// 	// Write the embedded binary to the persistent location
-// 	err := os.WriteFile(exePath, sumatraBinary, 0755)
-// 	if err != nil {
-// 		return "", err
-// 	}
-
-// 	return exePath, nil
-// }
-
 // func ClearPrintQueWindows( printer_name string ) {
 // 	fmt.Printn( "todo" )
 // }
@@ -173,71 +136,200 @@ func PrintLinux( printer_name string , pdf_file_path string ) {
 	fmt.Println( "todo" )
 }
 
-func Print( printer_name string , name string ) {
 
-	page_width := 2.25
-	page_heigth := 4.0
-	page_center_x := ( page_width / 2 )
-	page_center_y := ( page_heigth / 2 )
-	fmt.Printf( "Page Center X === %v || Page Center Y === %v\n" , page_center_x , page_center_y )
+// centerCoords returns the top-left coordinate (x,y) needed to center an element of
+// given dimensions (elementWidth x elementHeight) on a page (pageWidth x pageHeight).
+func center_coords(pageWidth, pageHeight, elementWidth, elementHeight float64) (x, y float64) {
+	return (pageWidth - elementWidth) / 2, (pageHeight - elementHeight) / 2
+}
 
-	icon_scale_factor := 0.70
-	icon_size_x := ( ( 107.0 / 72.0 ) * icon_scale_factor )
-	icon_size_y := ( ( 98.0 / 72.0 ) * icon_scale_factor )
-	icon_center_x := ( icon_size_x / 2 )
-	icon_center_y := ( icon_size_y / 2 )
-	fmt.Printf( "Icon Center X === %v || Icon Center Y === %v\n" , icon_center_x , icon_center_y )
+// addRotatedCenteredText draws text rotated by 'angle' degrees about a pivot point.
+// It computes the text’s bounding box (using GetStringWidth and approximating height as fontSize/72)
+// and then calculates a top-left coordinate so that the bounding box is centered on (pivotX, pivotY).
+func add_rotated_centered_text_two(pdf *gofpdf.Fpdf, text, fontName string, fontSize, pivotX, pivotY, angle float64) {
+	pdf.SetFont(fontName, "", fontSize)
+	textWidth := pdf.GetStringWidth(text)
+	// Approximate text height in inches (1pt = 1/72 in)
+	textHeight := fontSize / 72.0
 
-	logo_scale_factor := 0.6
-	logo_size_x := ( ( 300 / 96 ) * logo_scale_factor )
-	logo_size_y := ( ( 156 / 96 ) * logo_scale_factor )
-	logo_center_x := ( logo_size_x / 2 )
-	logo_center_y := ( logo_size_y / 2 )
-	fmt.Printf( "Logo Center X === %v || Logo Center Y === %v\n" , logo_center_x , logo_center_y )
+	// Compute top-left coordinates so that the text bounding box is centered at (pivotX, pivotY)
+	x := pivotX - (textWidth / 2)
+	y := pivotY - (textHeight / 2)
 
-	pdf := gofpdf.NewCustom( &gofpdf.InitType{
-		OrientationStr: "P" , // L = landscape , P = portrait
-		UnitStr: "in" ,
-		Size: gofpdf.SizeType{ Wd: 2.25 , Ht: 4.0 } ,
+	// Rotate about the pivot and then draw the text at the computed (x, y)
+	pdf.TransformBegin()
+	pdf.TransformRotate(angle, pivotX, pivotY)
+	pdf.Text(x, y, text)
+	pdf.TransformEnd()
+}
+
+// addRotatedImage adds an image rotated by 'angle' degrees about its center.
+func add_rotated_image_two(pdf *gofpdf.Fpdf, imagePath string, x, y, width, height, angle float64) {
+	// Compute the center of the image.
+	centerX := x + width/2
+	centerY := y + height/2
+
+	pdf.TransformBegin()
+	pdf.TransformRotate(angle, centerX, centerY)
+	pdf.ImageOptions(
+		imagePath,
+		(x-0.1), y,
+		width, height,
+		false,
+		gofpdf.ImageOptions{
+			ImageType:             "PNG",
+			ReadDpi:               true,
+			AllowNegativePosition: false,
+		},
+		0, "",
+	)
+	pdf.TransformEnd()
+}
+
+func Print( printer_name , name string) {
+	// Page dimensions in inches.
+	const pageWidth = 2.25
+	const pageHeight = 4.0
+
+	// Create PDF with specified page dimensions.
+	pdf := gofpdf.NewCustom(&gofpdf.InitType{
+		OrientationStr: "P", // portrait
+		UnitStr: "in",
+		Size:  gofpdf.SizeType{Wd: pageWidth, Ht: pageHeight},
 	})
-	pdf.SetMargins( 0.1 , 0.1 , 0.1 ) // left , top , right
+	pdf.SetMargins(0.1, 0.1, 0.1)
 	pdf.AddPage()
-	// font_abs_path , _ := filepath.Abs( font_path )
 
-
+	// Add the font (ensure the file exists at fontPath).
 	pdf.AddUTF8Font( "ComicNeue" , "" , "./v1/embed/fonts/ComicNeue-Regular.ttf" )
-	// pdf.AddUTF8FontFromBytes( "ComicNeue" , "" , font_bytes )
 
+	// --- Add Rotated Centered Text ---
+	// We'll mimic your original approach: using a horizontal pivot computed as:
+	//   pivotX = (pageCenterX - (pageCenterX/2)) + (pageCenterX/4)
+	// and the vertical pivot as the page’s vertical center.
+	pageCenterX := pageWidth / 2
+	pageCenterY := pageHeight / 2
+	pivotX := (pageCenterX - (pageCenterX / 2)) + (pageCenterX / 4) // equivalent to 0.75 * pageCenterX
+	pivotY := pageCenterY
+	// Rotate the text 90° about (pivotX, pivotY)
+	add_rotated_centered_text_two(pdf, name, "ComicNeue", 40, pivotX, pivotY, 90)
 
-	add_rotated_centered_text( pdf , name , "ComicNeue" , 40 , ( ( page_center_x - ( page_center_x / 2 ) ) + ( page_center_x / 4 ) ) )
-	// add_rotated_image( pdf , "icon.png" , ( page_center_x - icon_center_x - 0.1 ) , ( page_center_y + icon_center_y ) , icon_size_x , icon_size_y , 90 )
-	// add_rotated_image( pdf , "./v1/printer/icon.png" , ( page_center_x - icon_center_x - 0.1 ) , ( page_heigth - 1.1 ) , icon_size_x , icon_size_y , 90 )
-	add_rotated_image( pdf , "./v1/embed/images/logo.png" , ( page_center_x - ( logo_size_y ) ) , ( ( page_center_y - logo_center_y ) - 0.3 ) , logo_size_x , logo_size_y , 90 )
+	// --- Add Rotated, Centered Logo ---
+	// Compute logo dimensions.
+	logoScale := 0.6
+	logoWidth := (300.0 / 96.0) * logoScale
+	logoHeight := (156.0 / 96.0) * logoScale
+	// For 90° rotation, the effective dimensions swap.
+	effectiveLogoWidth := logoHeight
+	effectiveLogoHeight := logoWidth
+	// Compute top-left coordinates to center the logo's bounding box.
+	logoX, logoY := center_coords(pageWidth, pageHeight, effectiveLogoWidth, effectiveLogoHeight)
+	// Adjust vertically to nudge the logo downward.
+	logoY += 0.3
 
+	add_rotated_image_two( pdf , "./v1/embed/images/logo.png" , logoX, logoY, logoWidth, logoHeight, 90)
+
+	// --- Output the PDF ---
 	pdf_temp_file , _ := ioutil.TempFile( "" , "ticket-*.pdf" )
 	defer pdf_temp_file.Close()
 	pdf_temp_file_path := pdf_temp_file.Name()
 	defer func() {
 		os.Remove( pdf_temp_file_path )
 	}()
-	err := pdf.OutputFileAndClose( pdf_temp_file_path )
-	fmt.Println( "Printing" , pdf_temp_file_path )
-	if err != nil {
-		fmt.Println( err )
+	if err := pdf.OutputFileAndClose(pdf_temp_file_path); err != nil {
+		fmt.Println("Error outputting PDF:", err)
 		return
 	}
+	fmt.Println("Printing", pdf_temp_file_path)
 
-	if runtime.GOOS == "windows" {
-		// clear_printer_que_windows( config.PrinterName )
-		PrintWindows( printer_name , pdf_temp_file_path )
-	} else if runtime.GOOS == "darwin" {
-		ClearPrintQueMacOSX( printer_name )
-		PrintMacOSX( printer_name , pdf_temp_file_path , 2 )
-	} else if runtime.GOOS == "linux" {
-		ClearPrintQueLinux( printer_name )
-		PrintLinux( printer_name , pdf_temp_file_path )
+	// --- OS-specific printing ---
+	switch runtime.GOOS {
+		case "windows":
+			PrintWindows(printer_name, pdf_temp_file_path)
+		case "darwin":
+			ClearPrintQueMacOSX(printer_name)
+			PrintMacOSX(printer_name, pdf_temp_file_path, 2)
+		case "linux":
+			ClearPrintQueLinux(printer_name)
+			PrintLinux(printer_name, pdf_temp_file_path)
+		default:
+			fmt.Println("Unsupported OS")
 	}
 
-	fmt.Println( "printed ticket for" , name )
+	fmt.Println("Printed ticket for", name)
+}
 
+func PrintTwo( printer_name , name string , extra_string string ) {
+	// Page dimensions in inches.
+	const pageWidth = 2.25
+	const pageHeight = 4.0
+
+	// Create PDF with specified page dimensions.
+	pdf := gofpdf.NewCustom(&gofpdf.InitType{
+		OrientationStr: "P", // portrait
+		UnitStr: "in",
+		Size:  gofpdf.SizeType{Wd: pageWidth, Ht: pageHeight},
+	})
+	pdf.SetMargins(0.1, 0.1, 0.1)
+	pdf.AddPage()
+
+	// Add the font (ensure the file exists at fontPath).
+	pdf.AddUTF8Font( "ComicNeue" , "" , "./v1/embed/fonts/ComicNeue-Regular.ttf" )
+
+	// --- Add Rotated Centered Text ---
+	// We'll mimic your original approach: using a horizontal pivot computed as:
+	//   pivotX = (pageCenterX - (pageCenterX/2)) + (pageCenterX/4)
+	// and the vertical pivot as the page’s vertical center.
+	pageCenterX := pageWidth / 2
+	pageCenterY := pageHeight / 2
+	pivotX := (pageCenterX - (pageCenterX / 2)) + (pageCenterX / 4) // equivalent to 0.75 * pageCenterX
+	pivotXExtra := (pageCenterX - (pageCenterX / 2)) + (pageCenterX / 4) + 0.25 // equivalent to 0.75 * pageCenterX
+	pivotY := pageCenterY
+	// Rotate the text 90° about (pivotX, pivotY)
+	add_rotated_centered_text_two(pdf, name, "ComicNeue", 40, pivotX, pivotY, 90)
+	add_rotated_centered_text_two(pdf, extra_string, "ComicNeue", 16, pivotXExtra, pivotY, 90)
+
+	// --- Add Rotated, Centered Logo ---
+	// Compute logo dimensions.
+	logoScale := 0.6
+	logoWidth := (300.0 / 96.0) * logoScale
+	logoHeight := (156.0 / 96.0) * logoScale
+	// For 90° rotation, the effective dimensions swap.
+	effectiveLogoWidth := logoHeight
+	effectiveLogoHeight := logoWidth
+	// Compute top-left coordinates to center the logo's bounding box.
+	logoX, logoY := center_coords(pageWidth, pageHeight, effectiveLogoWidth, effectiveLogoHeight)
+	// Adjust vertically to nudge the logo downward.
+	logoY += 0.3
+
+	add_rotated_image_two( pdf , "./v1/embed/images/logo.png" , logoX, logoY, logoWidth, logoHeight, 90)
+
+	// --- Output the PDF ---
+	pdf_temp_file , _ := ioutil.TempFile( "" , "ticket-*.pdf" )
+	defer pdf_temp_file.Close()
+	pdf_temp_file_path := pdf_temp_file.Name()
+	defer func() {
+		os.Remove( pdf_temp_file_path )
+	}()
+	if err := pdf.OutputFileAndClose(pdf_temp_file_path); err != nil {
+		fmt.Println("Error outputting PDF:", err)
+		return
+	}
+	fmt.Println("Printing", pdf_temp_file_path)
+
+	// --- OS-specific printing ---
+	switch runtime.GOOS {
+		case "windows":
+			PrintWindows(printer_name, pdf_temp_file_path)
+		case "darwin":
+			ClearPrintQueMacOSX(printer_name)
+			PrintMacOSX(printer_name, pdf_temp_file_path, 2)
+		case "linux":
+			ClearPrintQueLinux(printer_name)
+			PrintLinux(printer_name, pdf_temp_file_path)
+		default:
+			fmt.Println("Unsupported OS")
+	}
+
+	fmt.Println("Printed ticket for", name)
 }

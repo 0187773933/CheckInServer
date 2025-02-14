@@ -634,7 +634,10 @@ func UserCheckIn( s *server.Server ) fiber.Handler {
 		}
 		fmt.Println( check_in )
 
-		var print_tickets []string
+		var parents_ticket string
+		var parents_ticket_extra string
+		var child_tickets []string
+		var child_first_names []string
 		s.DB.Update( func( tx *bolt.Tx ) error {
 			users_blank := tx.Bucket( []byte( "users-blank" ) )
 			users_key_encrypted := users_blank.Get( []byte( check_in.UUID ) )
@@ -652,22 +655,27 @@ func UserCheckIn( s *server.Server ) fiber.Handler {
 			fmt.Println( decrypted_user )
 
 			// Make Parents Tickets
-			print_ticket_parents := decrypted_user.GetFamilyName()
-			print_tickets = append( print_tickets , print_ticket_parents )
+			// print_ticket_parents := decrypted_user.GetFamilyName()
+			parents_ticket = decrypted_user.GetLastName()
+			// print_tickets = append( print_tickets , print_ticket_parents )
 			// Make Included Child Tickets
 			for _ , child := range decrypted_user.Children {
 				for _ , included := range check_in.Additional {
 					if included == child.UUID {
-						var child_ticket string
-						if child.LastName == "" {
-							child_ticket = child.FirstName + " " + decrypted_user.Identity.LastName
-						} else {
-							child_ticket = child.FirstName + " " + child.LastName
-						}
-						print_tickets = append( print_tickets , child_ticket )
+						// var child_ticket string
+						// if child.LastName == "" {
+						// 	child_ticket = child.FirstName + " " + decrypted_user.Identity.LastName
+						// } else {
+						// 	child_ticket = child.FirstName + " " + child.LastName
+						// }
+						// child_tickets = append( child_tickets , child_ticket )
+						child_tickets = append( child_tickets , child.FirstName )
+						child_first_names = append( child_first_names , child.FirstName )
 					}
 				}
 			}
+			parents_ticket_extra = strings.Join( child_first_names , " , " )
+			// Make Extra Tickets
 
 			// check-in
 			now := s.LOG.GetNowTimeOBJ()
@@ -686,7 +694,11 @@ func UserCheckIn( s *server.Server ) fiber.Handler {
 			return nil
 		})
 
-		for _ , print_string := range print_tickets {
+		// print parents ticket
+		printer.PrintTwo( s.Config.MiscMap[ "printer_name" ] , parents_ticket , parents_ticket_extra )
+
+		// print normal tickets for children
+		for _ , print_string := range child_tickets {
 			fmt.Println( "printing" , print_string )
 			printer.Print( s.Config.MiscMap[ "printer_name" ] , print_string )
 		}
@@ -694,7 +706,6 @@ func UserCheckIn( s *server.Server ) fiber.Handler {
 		return c.JSON( fiber.Map{
 			"result": true ,
 			"check_in": check_in ,
-			"print_tickets": print_tickets ,
 		})
 	}
 }

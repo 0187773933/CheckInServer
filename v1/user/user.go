@@ -88,3 +88,10 @@ func ( user *User ) GetFamilyName() string {
 	}
 	return fmt.Sprintf("%s %s", user.Identity.FirstName, user.Identity.LastName)
 }
+
+func ( user *User ) GetLastName() string {
+	if user.Identity.LastName != "" { return user.Identity.LastName }
+	if user.Spouse.LastName != "" { return user.Spouse.LastName }
+	if user.Identity.FirstName != "" { return user.Identity.FirstName }
+	return "Unknown"
+}
