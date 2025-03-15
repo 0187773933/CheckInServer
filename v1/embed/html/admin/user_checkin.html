@@ -1,473 +1,480 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Check In User</title>
-  <!-- Bootstrap CSS -->
-  <link rel="stylesheet" href="/cdn/bootstrap.min.css">
-    <!-- Bootstrap Bundle with Popper & jQuery -->
-  <script src="/cdn/bootstrap.bundle.min.js"></script>
-  <script src="/cdn/jquery.min.js"></script>
-  <style>
-    .search-results { 
-      margin-top: 20px; 
-      display: none; 
-    }
-  </style>
-  <script src="/cdn/nacl.min.js"></script>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Check In User</title>
+	<!-- Bootstrap CSS -->
+	<link rel="stylesheet" href="/cdn/bootstrap.min.css">
+	<!-- Bootstrap Bundle with Popper & jQuery -->
+	<script src="/cdn/bootstrap.bundle.min.js"></script>
+	<script src="/cdn/jquery.min.js"></script>
+	<style>
+		.search-results {
+			margin-top: 20px;
+			display: none;
+		}
+	</style>
+	<script src="/cdn/nacl.min.js"></script>
 </head>
 <body>
-  <div class="container my-4">
-    <h1 class="mb-4">Check In User</h1>
-    
-    <!-- Search Section -->
-    <div class="mb-3">
-      <label for="barcode" class="form-label">Scan Barcode</label>
-      <div class="input-group">
-        <input type="text" id="barcode" name="barcode" class="form-control" placeholder="Scan or enter barcode, UUID, or name">
-      </div>
-    </div>
-    
-    <!-- Search Results -->
-    <div id="searchResults" class="search-results">
-      <h2 class="h5">Search Results:</h2>
-      <table id="resultsTable" class="table table-striped">
-        <thead>
-          <tr>
-            <th>Child's Name</th>
-            <th>Parent's Name</th>
-            <th>Phone</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="resultsBody"></tbody>
-      </table>
-    </div>
-    
-    <!-- Check In Form -->
-    <form id="user-checkin-form" action="/user/checkin" method="post">
-      <!-- Check In and Clear buttons at the top -->
-      <div class="mb-3">
-        <button id="submit-button" type="submit" class="btn btn-primary">Check In</button>
-        <button id="clear-button" type="button" class="btn btn-secondary ms-2">Clear Form</button>
-      </div>
-      <fieldset class="border p-3 mb-3">
-        <legend class="w-auto px-2">User Information</legend>
-        <div class="row">
-          <!-- Left Column: Barcode & Children Information -->
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label for="form_barcode" class="form-label">Barcode</label>
-              <input type="text" id="form_barcode" name="barcode" class="form-control" readonly>
-            </div>
-            <h2 class="h5">Children Information</h2>
-            <div id="children-container"></div>
-          </div>
-          <!-- Right Column: Parent & Spouse Information -->
-          <div class="col-md-6">
-            <!-- Parent Information -->
-            <div class="mb-3">
-              <label for="parents_first_name" class="form-label">Parent's First Name</label>
-              <input type="text" id="parents_first_name" name="parents_first_name" class="form-control" readonly>
-            </div>
-            <div class="mb-3">
-              <label for="parents_last_name" class="form-label">Parent's Last Name</label>
-              <input type="text" id="parents_last_name" name="parents_last_name" class="form-control" readonly>
-            </div>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label for="phone_number" class="form-label">Phone Number</label>
-                <input type="tel" id="phone_number" name="phone_number" class="form-control" readonly>
-              </div>
-              <div class="col-md-6 mb-3">
-                <label for="email_address" class="form-label">Email Address</label>
-                <input type="email" id="email_address" name="email_address" class="form-control" readonly>
-              </div>
-            </div>
-            <!-- Spouse Information -->
-            <h2 class="h5 mt-4">Spouse Information (Optional)</h2>
-            <div class="mb-3">
-              <label for="spouse_first_name" class="form-label">Spouse's First Name</label>
-              <input type="text" id="spouse_first_name" name="spouse_first_name" class="form-control" readonly>
-            </div>
-            <div class="mb-3">
-              <label for="spouse_last_name" class="form-label">Spouse's Last Name</label>
-              <input type="text" id="spouse_last_name" name="spouse_last_name" class="form-control" readonly>
-            </div>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label for="spouse_phone_number" class="form-label">Spouse's Phone Number</label>
-                <input type="tel" id="spouse_phone_number" name="spouse_phone_number" class="form-control" readonly>
-              </div>
-              <div class="col-md-6 mb-3">
-                <label for="spouse_email_address" class="form-label">Spouse's Email Address</label>
-                <input type="email" id="spouse_email_address" name="spouse_email_address" class="form-control" readonly>
-              </div>
-            </div>
-            <div class="mb-3">
-              <label for="family_size" class="form-label">Family Size</label>
-              <input type="number" id="family_size" name="family_size" class="form-control" value="1" min="1" readonly>
-            </div>
-          </div>
-        </div>
-      </fieldset>
-    </form>
-  </div>
-  
+	<div class="container my-4">
+		<h1 class="mb-4">Check In User</h1>
 
-  
-  <script type="text/javascript">
-    // --- Utility Functions ---
-    const uuid_v4_regex = /^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i;
-    function is_uuid(str) { return uuid_v4_regex.test(str); }
-    const barcode_regex = /^\d+$/;
-    function is_barcode(str) { return barcode_regex.test(str); }
-    
-    // Updated populate_form: now also fills in spouse information if available.
-    function populate_form(user) {
-      window.ACTIVE_USER = user;
-      document.getElementById("form_barcode").value = (user.barcodes && user.barcodes[0]) || '';
-      // document.getElementById("username").value = user.username || '';
-      // Populate Parent info (use identity if available; else fallback to family_members[0])
-      let parent = user.identity || (user.family_members && user.family_members[0]) || {};
-      document.getElementById("parents_first_name").value = parent.first_name || '';
-      document.getElementById("parents_last_name").value = parent.last_name || '';
-      document.getElementById("phone_number").value = parent.phone_number || '';
-      document.getElementById("email_address").value = parent.email_address || '';
-      document.getElementById("family_size").value = user.family_size || 1;
-      
-      // Populate Spouse info if available.
-      if (user.spouse) {
-        document.getElementById("spouse_first_name").value = user.spouse.first_name || '';
-        document.getElementById("spouse_last_name").value = user.spouse.last_name || '';
-        document.getElementById("spouse_phone_number").value = user.spouse.phone_number || '';
-        document.getElementById("spouse_email_address").value = user.spouse.email_address || '';
-      }
-      
-      // Populate Children Information if available.
-      const childrenContainer = document.getElementById("children-container");
-      childrenContainer.innerHTML = '';
-      let children = user.children;
-      if (children && !Array.isArray(children)) { 
-        children = [ children ]; 
-      }
-      if (children && children.length > 0) {
-        children.forEach(child => addChildEntry(child));
-      } else {
-        childrenContainer.innerHTML = '<p class="text-muted">No children data available.</p>';
-      }
-    }
-    
-    // Display search results using a Bootstrap table.
-    function display_search_results(users) {
-      if (!users || users.length === 0) return;
-      if (users.length === 1) {
-        document.getElementById("searchResults").style.display = "none";
-        populate_form(users[0]);
-        return;
-      }
-      const resultsBody = document.getElementById("resultsBody");
-      resultsBody.innerHTML = '';
-      document.getElementById("searchResults").style.display = "block";
-      users.forEach((user, index) => {
-        const parent = user.identity || (user.family_members && user.family_members[0]) || {};
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${user.username || ''}</td>
-          <td>${parent.first_name || ''} ${parent.last_name || ''}</td>
-          <td>${parent.phone_number || ''}</td>
-          <td>
-            <button class="btn btn-sm btn-success select-btn" onclick="select_user(${index})">Select</button>
-          </td>
-        `;
-        row.addEventListener('click', () => select_user(index));
-        resultsBody.appendChild(row);
-      });
-      window.searchResults = users;
-    }
-    
-    function select_user(index) {
-      if (!window.searchResults || !window.searchResults[index]) return;
-      populate_form(window.searchResults[index]);
-      document.getElementById("searchResults").style.display = "none";
-    }
-    
-    function uint8_array_to_base64(uint8Array) {
-      return btoa(String.fromCharCode(...uint8Array));
-    }
-    function base64_to_uint8_array(base64) {
-      return new Uint8Array(atob(base64).split("").map(char => char.charCodeAt(0)));
-    }
-    
-    function get_uuid_in_url() {
-      const url = window.location.href;
-      const uuidPattern = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/;
-      const match = url.match(uuidPattern);
-      return match ? match[0] : false;
-    }
-    
-    function get_user(uuid) {
-      return new Promise(function(resolve, reject) {
-        try {
-          var currentUrl = window.location.href;
-          var url = currentUrl.replace(/\/checkin$/, "/get/" + uuid);
-          var xhr = new XMLHttpRequest();
-          xhr.open("GET", url, false);
-          xhr.setRequestHeader("Content-Type", "application/json");
-          xhr.onload = function() {
-            if (xhr.status === 200) {
-              var response = JSON.parse(xhr.responseText);
-              resolve(response);
-            } else {
-              console.error("Error fetching user:", xhr.statusText);
-              resolve(false);
-            }
-          };
-          xhr.onerror = function() {
-            console.error("GET request error");
-            resolve(false);
-          };
-          xhr.send();
-        } catch (error) {
-          console.log(error);
-          resolve(false);
-        }
-      });
-    }
-    
-    function get_user_by_barcode(barcode) {
-      return new Promise(function(resolve, reject) {
-        try {
-          var currentUrl = window.location.href;
-          var url = currentUrl.replace(/\/checkin$/, "/get/barcode/" + barcode);
-          var xhr = new XMLHttpRequest();
-          xhr.open("GET", url, false);
-          xhr.setRequestHeader("Content-Type", "application/json");
-          xhr.onload = function() {
-            if (xhr.status === 200) {
-              var response = JSON.parse(xhr.responseText);
-              resolve(response);
-            } else {
-              console.error("Error fetching user:", xhr.statusText);
-              resolve(false);
-            }
-          };
-          xhr.onerror = function() {
-            console.error("GET request error");
-            resolve(false);
-          };
-          xhr.send();
-        } catch (error) {
-          console.log(error);
-          resolve(false);
-        }
-      });
-    }
-    
-    function fuzzy_search_user(input_text) {
-      return new Promise(function(resolve, reject) {
-        try {
-          if (input_text === "") { resolve(false); return; }
-          var currentUrl = window.location.href;
-          var url = currentUrl.replace(/\/checkin$/, "/search/" + encodeURIComponent(input_text));
-          console.log(url);
-          var xhr = new XMLHttpRequest();
-          xhr.open("GET", url, false);
-          xhr.setRequestHeader("Content-Type", "application/json");
-          xhr.onload = function() {
-            if (xhr.status === 200) {
-              var response = JSON.parse(xhr.responseText);
-              resolve(response);
-            } else {
-              console.error("Error fetching user:", xhr.statusText);
-              resolve(false);
-            }
-          };
-          xhr.onerror = function() {
-            console.error("GET request error");
-            resolve(false);
-          };
-          xhr.send();
-        } catch (error) {
-          console.log(error);
-          resolve(false);
-        }
-      });
-    }
-    
-    function post_check_in(payload) {
-      return new Promise(function(resolve, reject) {
-        try {
-          var url = window.location.href;
-          var xhr = new XMLHttpRequest();
-          xhr.open("POST", url, false);
-          xhr.setRequestHeader("Content-Type", "application/json");
-          xhr.onload = function() {
-            if (xhr.status === 200) {
-              console.log("Successfully posted to:", url);
-              var response = JSON.parse(xhr.responseText);
-              console.log( response );
-              resolve(response);
-            } else {
-              console.error("Error posting to:", url, xhr.statusText);
-              resolve(false);
-            }
-          };
-          xhr.onerror = function() {
-            console.error("POST request error");
-            resolve(false);
-          };
-          var data = JSON.stringify(payload);
-          xhr.send(data);
-        } catch (error) {
-          console.log(error);
-          resolve(false);
-        }
-      });
-    }
-    
-    function debounce_input(func, delay) {
-      let timer;
-      return function(...args) {
-        clearTimeout(timer);
-        timer = setTimeout(() => func.apply(this, args), delay);
-      };
-    }
-    
-    function detect_input_type(typed_input) {
-      if (is_uuid(typed_input)) return "uuid";
-      if (is_barcode(typed_input)) return "barcode";
-      return "string";
-    }
-    
-    function search_user(input_type, input) {
-      return new Promise(async function(resolve, reject) {
-        try {
-          if (input_type === "uuid") {
-            console.log("searching uuid", input);
-            let user = await get_user(input);
-            resolve([ user.user ]);
-            return;
-          }
-          if (input_type === "barcode") {
-            console.log("searching barcode", input);
-            let user = await get_user_by_barcode(input);
-            resolve([ user.user ]);
-            return;
-          }
-          let potential_users = await fuzzy_search_user(input);
-          resolve(potential_users.users);
-        } catch (error) {
-          console.log(error);
-          resolve(false);
-        }
-      });
-    }
-    
-    // --- Child Entry ---
-    // Create a child entry with a checkbox to mark presence.
-    function addChildEntry(child = {}) {
-      let container = document.getElementById("children-container");
-      let childDiv = document.createElement("div");
-      childDiv.className = "child-entry border p-2 mb-2";
-      childDiv.innerHTML = `
-        <div class="d-flex align-items-center mb-2">
-          <input type="checkbox" class="child-select me-2" checked>
-          <span class="fw-bold">Present</span>
-        </div>
-        <div class="mb-2">
-          <label class="form-label">Child's First Name</label>
-          <input type="text" class="form-control child_first_name" uuid="${child.uuid}" value="${child.first_name || ''}" readonly>
-        </div>
-        <div class="row mb-2">
-          <div class="col">
-            <label class="form-label">Age</label>
-            <input type="number" class="form-control child_age" min="0" value="${child.age || ''}" readonly>
-          </div>
-          <div class="col">
-            <label class="form-label">Gender</label>
-            <input type="text" class="form-control child_sex" value="${child.sex || ''}" readonly>
-          </div>
-        </div>
-      `;
-      container.appendChild(childDiv);
-    }
-    
-    // Debounce search input.
-    const handle_input = debounce_input(async () => {
-      let input = document.getElementById("barcode").value.trim();
-      let input_type = detect_input_type(input);
-      console.log(input_type, input);
-      let users = await search_user(input_type, input);
-      console.log(users);
-      display_search_results(users);
-    }, 300);
-    
-    document.getElementById("barcode").addEventListener("input", handle_input);
-    
-    // Handle form submission for Check In.
-    document.getElementById("user-checkin-form").addEventListener("submit", async function(event) {
-      event.preventDefault();
-      // Build payload: include user's uuid and only selected children.
-      let payload = { uuid: window.ACTIVE_USER.uuid, additional: [] };
-      const childrenContainer = document.getElementById("children-container");
-      const childEntries = childrenContainer.getElementsByClassName("child-entry");
-      Array.from(childEntries).forEach(entry => {
-        let checkbox = entry.querySelector(".child-select");
-        if (checkbox && checkbox.checked) {
-          // let child = {
-          //   first_name: entry.querySelector(".child_first_name").value,
-          //   age: parseInt(entry.querySelector(".child_age").value) || 0,
-          //   sex: entry.querySelector(".child_sex").value
-          // };
-          let x_uuid = entry.querySelector(".child_first_name").getAttribute( "uuid" ) ;
-          payload.additional.push( x_uuid );
-        }
-      });
-      const success = await post_check_in(payload);
-      if (success) {
-        alert("User checked in successfully!");
-        clearForm();
-      } else {
-        alert("Error checking in user. Please try again.");
-      }
-    });
-    
-    // Clear the form and reset fields.
-    function clearForm() {
-      document.getElementById("user-checkin-form").reset();
-      document.getElementById("children-container").innerHTML = '';
-      document.getElementById("barcode").value = '';
-      // Optionally, clear ACTIVE_USER.
-      window.ACTIVE_USER = null;
-      // Set focus back to the barcode input.
-      document.getElementById("barcode").focus();
-    }
-    
-    // Add event listener to the Clear Form button.
-    document.getElementById("clear-button").addEventListener("click", clearForm);
-    
-    // Main initialization.
-    (async () => {
-      const barcode_input = document.getElementById("barcode");
-      barcode_input.focus();
-      window.USER = {};
-      window.USER.UUID = get_uuid_in_url();
-      
-      // If a UUID is present in the URL, fetch and populate the form.
-      if (window.USER.UUID) {
-        console.log("Found UUID:", window.USER.UUID);
-        let user = await get_user(window.USER.UUID);
-        if (user) {
-          window.ACTIVE_USER = user.user;
-          populate_form(user.user);
-        } else {
-          alert("Error fetching existing user");
-          console.log(user);
-        }
-      }
-    })();
-  </script>
+		<!-- Search Section -->
+		<div class="mb-3">
+			<label for="barcode" class="form-label">Scan Barcode</label>
+			<div class="input-group">
+				<input type="text" id="barcode" name="barcode" class="form-control" placeholder="Scan or enter barcode, UUID, or name">
+			</div>
+		</div>
+
+		<!-- Search Results -->
+		<div id="searchResults" class="search-results">
+			<h2 class="h5">Search Results:</h2>
+			<table id="resultsTable" class="table table-striped">
+				<thead>
+					<tr>
+						<th>Child's Name</th>
+						<th>Parent's Name</th>
+						<th>Phone</th>
+						<th>Action</th>
+					</tr>
+				</thead>
+				<tbody id="resultsBody"></tbody>
+			</table>
+		</div>
+
+		<!-- Check In Form -->
+		<form id="user-checkin-form" action="/user/checkin" method="post">
+			<!-- Check In and Clear buttons at the top -->
+			<div class="mb-3">
+				<button id="submit-button" type="submit" class="btn btn-primary">Check In</button>
+				<button id="clear-button" type="button" class="btn btn-secondary ms-2">Clear Form</button>
+			</div>
+			<fieldset class="border p-3 mb-3">
+				<legend class="w-auto px-2">User Information</legend>
+				<div class="row">
+					<!-- Left Column: Barcode(s) & Children Information -->
+					<div class="col-md-6">
+						<div class="mb-3">
+							<label class="form-label">Barcode(s)</label>
+							<!-- Display barcodes as badges (read-only) -->
+							<div id="barcode-container" class="form-control-plaintext"></div>
+						</div>
+						<h2 class="h5">Children Information</h2>
+						<div id="children-container"></div>
+					</div>
+					<!-- Right Column: Parent & Spouse Information -->
+					<div class="col-md-6">
+						<!-- Parent Information -->
+						<div class="mb-3">
+							<label for="parents_first_name" class="form-label">Parent's First Name</label>
+							<input type="text" id="parents_first_name" name="parents_first_name" class="form-control" readonly>
+						</div>
+						<div class="mb-3">
+							<label for="parents_last_name" class="form-label">Parent's Last Name</label>
+							<input type="text" id="parents_last_name" name="parents_last_name" class="form-control" readonly>
+						</div>
+						<div class="row">
+							<div class="col-md-6 mb-3">
+								<label for="phone_number" class="form-label">Phone Number</label>
+								<input type="tel" id="phone_number" name="phone_number" class="form-control" readonly>
+							</div>
+							<div class="col-md-6 mb-3">
+								<label for="email_address" class="form-label">Email Address</label>
+								<input type="email" id="email_address" name="email_address" class="form-control" readonly>
+							</div>
+						</div>
+						<!-- Spouse Information -->
+						<h2 class="h5 mt-4">Spouse Information (Optional)</h2>
+						<div class="mb-3">
+							<label for="spouse_first_name" class="form-label">Spouse's First Name</label>
+							<input type="text" id="spouse_first_name" name="spouse_first_name" class="form-control" readonly>
+						</div>
+						<div class="mb-3">
+							<label for="spouse_last_name" class="form-label">Spouse's Last Name</label>
+							<input type="text" id="spouse_last_name" name="spouse_last_name" class="form-control" readonly>
+						</div>
+						<div class="row">
+							<div class="col-md-6 mb-3">
+								<label for="spouse_phone_number" class="form-label">Spouse's Phone Number</label>
+								<input type="tel" id="spouse_phone_number" name="spouse_phone_number" class="form-control" readonly>
+							</div>
+							<div class="col-md-6 mb-3">
+								<label for="spouse_email_address" class="form-label">Spouse's Email Address</label>
+								<input type="email" id="spouse_email_address" name="spouse_email_address" class="form-control" readonly>
+							</div>
+						</div>
+						<div class="mb-3">
+							<label for="family_size" class="form-label">Family Size</label>
+							<input type="number" id="family_size" name="family_size" class="form-control" value="1" min="1" readonly>
+						</div>
+					</div>
+				</div>
+			</fieldset>
+		</form>
+	</div>
+
+	<script type="text/javascript">
+		// --- Utility Functions ---
+		const uuid_v4_regex = /^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i;
+		function is_uuid(str) { return uuid_v4_regex.test(str); }
+		const barcode_regex = /^\d+$/;
+		function is_barcode(str) { return barcode_regex.test(str); }
+
+		// Updated populate_form: now fills in multiple barcodes as badges and populates parent, spouse, and children info.
+		function populate_form(user) {
+			window.ACTIVE_USER = user;
+			// Barcode(s)
+			const barcodeContainer = document.getElementById("barcode-container");
+			barcodeContainer.innerHTML = '';
+			if (user.barcodes && user.barcodes.length > 0) {
+				user.barcodes.forEach(bc => {
+					const badge = document.createElement("span");
+					badge.className = "badge bg-secondary me-1";
+					badge.textContent = bc;
+					barcodeContainer.appendChild(badge);
+				});
+			} else {
+				barcodeContainer.textContent = "No barcode available";
+			}
+
+			// Populate Parent info (use identity if available; else fallback to family_members[0])
+			let parent = user.identity || (user.family_members && user.family_members[0]) || {};
+			document.getElementById("parents_first_name").value = parent.first_name || '';
+			document.getElementById("parents_last_name").value = parent.last_name || '';
+			document.getElementById("phone_number").value = parent.phone_number || '';
+			document.getElementById("email_address").value = parent.email_address || '';
+			document.getElementById("family_size").value = user.family_size || 1;
+
+			// Populate Spouse info if available.
+			if (user.spouse) {
+				document.getElementById("spouse_first_name").value = user.spouse.first_name || '';
+				document.getElementById("spouse_last_name").value = user.spouse.last_name || '';
+				document.getElementById("spouse_phone_number").value = user.spouse.phone_number || '';
+				document.getElementById("spouse_email_address").value = user.spouse.email_address || '';
+			}
+
+			// Populate Children Information if available.
+			const childrenContainer = document.getElementById("children-container");
+			childrenContainer.innerHTML = '';
+			let children = user.children;
+			if (children && !Array.isArray(children)) {
+				children = [ children ];
+			}
+			if (children && children.length > 0) {
+				children.forEach(child => addChildEntry(child));
+			} else {
+				childrenContainer.innerHTML = '<p class="text-muted">No children data available.</p>';
+			}
+		}
+
+		// Display search results using a Bootstrap table.
+		function display_search_results(users) {
+			if (!users || users.length === 0) return;
+			if (users.length === 1) {
+				document.getElementById("searchResults").style.display = "none";
+				populate_form(users[0]);
+				return;
+			}
+			const resultsBody = document.getElementById("resultsBody");
+			resultsBody.innerHTML = '';
+			document.getElementById("searchResults").style.display = "block";
+			users.forEach((user, index) => {
+				const parent = user.identity || (user.family_members && user.family_members[0]) || {};
+				const row = document.createElement("tr");
+				row.innerHTML = `
+					<td>${user.username || ''}</td>
+					<td>${parent.first_name || ''} ${parent.last_name || ''}</td>
+					<td>${parent.phone_number || ''}</td>
+					<td>
+						<button class="btn btn-sm btn-success select-btn" onclick="select_user(${index})">Select</button>
+					</td>
+				`;
+				row.addEventListener('click', () => select_user(index));
+				resultsBody.appendChild(row);
+			});
+			window.searchResults = users;
+		}
+
+		function select_user(index) {
+			if (!window.searchResults || !window.searchResults[index]) return;
+			populate_form(window.searchResults[index]);
+			document.getElementById("searchResults").style.display = "none";
+		}
+
+		function uint8_array_to_base64(uint8Array) {
+			return btoa(String.fromCharCode(...uint8Array));
+		}
+		function base64_to_uint8_array(base64) {
+			return new Uint8Array(atob(base64).split("").map(char => char.charCodeAt(0)));
+		}
+
+		function get_uuid_in_url() {
+			const url = window.location.href;
+			const uuidPattern = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/;
+			const match = url.match(uuidPattern);
+			return match ? match[0] : false;
+		}
+
+		function get_user(uuid) {
+			return new Promise(function(resolve, reject) {
+				try {
+					var currentUrl = window.location.href;
+					var url = currentUrl.replace(/\/checkin$/, "/get/" + uuid);
+					var xhr = new XMLHttpRequest();
+					xhr.open("GET", url, false);
+					xhr.setRequestHeader("Content-Type", "application/json");
+					xhr.onload = function() {
+						if (xhr.status === 200) {
+							var response = JSON.parse(xhr.responseText);
+							resolve(response);
+						} else {
+							console.error("Error fetching user:", xhr.statusText);
+							resolve(false);
+						}
+					};
+					xhr.onerror = function() {
+						console.error("GET request error");
+						resolve(false);
+					};
+					xhr.send();
+				} catch (error) {
+					console.log(error);
+					resolve(false);
+				}
+			});
+		}
+
+		function get_user_by_barcode(barcode) {
+			return new Promise(function(resolve, reject) {
+				try {
+					var currentUrl = window.location.href;
+					var url = currentUrl.replace(/\/checkin$/, "/get/barcode/" + barcode);
+					var xhr = new XMLHttpRequest();
+					xhr.open("GET", url, false);
+					xhr.setRequestHeader("Content-Type", "application/json");
+					xhr.onload = function() {
+						if (xhr.status === 200) {
+							var response = JSON.parse(xhr.responseText);
+							resolve(response);
+						} else {
+							console.error("Error fetching user:", xhr.statusText);
+							resolve(false);
+						}
+					};
+					xhr.onerror = function() {
+						console.error("GET request error");
+						resolve(false);
+					};
+					xhr.send();
+				} catch (error) {
+					console.log(error);
+					resolve(false);
+				}
+			});
+		}
+
+		function fuzzy_search_user(input_text) {
+			return new Promise(function(resolve, reject) {
+				try {
+					if (input_text === "") { resolve(false); return; }
+					var currentUrl = window.location.href;
+					var url = currentUrl.replace(/\/checkin$/, "/search/" + encodeURIComponent(input_text));
+					console.log(url);
+					var xhr = new XMLHttpRequest();
+					xhr.open("GET", url, false);
+					xhr.setRequestHeader("Content-Type", "application/json");
+					xhr.onload = function() {
+						if (xhr.status === 200) {
+							var response = JSON.parse(xhr.responseText);
+							resolve(response);
+						} else {
+							console.error("Error fetching user:", xhr.statusText);
+							resolve(false);
+						}
+					};
+					xhr.onerror = function() {
+						console.error("GET request error");
+						resolve(false);
+					};
+					xhr.send();
+				} catch (error) {
+					console.log(error);
+					resolve(false);
+				}
+			});
+		}
+
+		function post_check_in(payload) {
+			return new Promise(function(resolve, reject) {
+				try {
+					var url = window.location.href;
+					var xhr = new XMLHttpRequest();
+					xhr.open("POST", url, false);
+					xhr.setRequestHeader("Content-Type", "application/json");
+					xhr.onload = function() {
+						if (xhr.status === 200) {
+							console.log("Successfully posted to:", url);
+							var response = JSON.parse(xhr.responseText);
+							console.log(response);
+							resolve(response);
+						} else {
+							console.error("Error posting to:", url, xhr.statusText);
+							resolve(false);
+						}
+					};
+					xhr.onerror = function() {
+						console.error("POST request error");
+						resolve(false);
+					};
+					var data = JSON.stringify(payload);
+					xhr.send(data);
+				} catch (error) {
+					console.log(error);
+					resolve(false);
+				}
+			});
+		}
+
+		function debounce_input(func, delay) {
+			let timer;
+			return function(...args) {
+				clearTimeout(timer);
+				timer = setTimeout(() => func.apply(this, args), delay);
+			};
+		}
+
+		function detect_input_type(typed_input) {
+			if (is_uuid(typed_input)) return "uuid";
+			if (is_barcode(typed_input)) return "barcode";
+			return "string";
+		}
+
+		function search_user(input_type, input) {
+			return new Promise(async function(resolve, reject) {
+				try {
+					if (input_type === "uuid") {
+						console.log("searching uuid", input);
+						let user = await get_user(input);
+						resolve([ user.user ]);
+						return;
+					}
+					if (input_type === "barcode") {
+						console.log("searching barcode", input);
+						let user = await get_user_by_barcode(input);
+						resolve([ user.user ]);
+						return;
+					}
+					let potential_users = await fuzzy_search_user(input);
+					resolve(potential_users.users);
+				} catch (error) {
+					console.log(error);
+					resolve(false);
+				}
+			});
+		}
+
+		// --- Child Entry ---
+		// Create a child entry with a checkbox to mark presence.
+		function addChildEntry(child = {}) {
+			let container = document.getElementById("children-container");
+			let childDiv = document.createElement("div");
+			childDiv.className = "child-entry border p-2 mb-2";
+			childDiv.innerHTML = `
+				<div class="d-flex align-items-center mb-2">
+					<input type="checkbox" class="child-select me-2" checked>
+					<span class="fw-bold">Present</span>
+				</div>
+				<div class="mb-2">
+					<label class="form-label">Child's First Name</label>
+					<input type="text" class="form-control child_first_name" uuid="${child.uuid}" value="${child.first_name || ''}" readonly>
+				</div>
+				<div class="row mb-2">
+					<div class="col">
+						<label class="form-label">Age</label>
+						<input type="number" class="form-control child_age" min="0" value="${child.age || ''}" readonly>
+					</div>
+					<div class="col">
+						<label class="form-label">Gender</label>
+						<input type="text" class="form-control child_sex" value="${child.sex || ''}" readonly>
+					</div>
+				</div>
+			`;
+			container.appendChild(childDiv);
+		}
+
+		// Debounce search input.
+		const handle_input = debounce_input(async () => {
+			let input = document.getElementById("barcode").value.trim();
+			let input_type = detect_input_type(input);
+			console.log(input_type, input);
+			let users = await search_user(input_type, input);
+			console.log(users);
+			display_search_results(users);
+		}, 300);
+
+		document.getElementById("barcode").addEventListener("input", handle_input);
+
+		// Handle form submission for Check In.
+		document.getElementById("user-checkin-form").addEventListener("submit", async function(event) {
+			event.preventDefault();
+			// Build payload: include user's uuid and only selected children.
+			let payload = { uuid: window.ACTIVE_USER.uuid, additional: [] };
+			const childrenContainer = document.getElementById("children-container");
+			const childEntries = childrenContainer.getElementsByClassName("child-entry");
+			Array.from(childEntries).forEach(entry => {
+				let checkbox = entry.querySelector(".child-select");
+				if (checkbox && checkbox.checked) {
+					let x_uuid = entry.querySelector(".child_first_name").getAttribute("uuid");
+					payload.additional.push(x_uuid);
+				}
+			});
+			const success = await post_check_in(payload);
+			if (success) {
+				alert("User checked in successfully!");
+				clearForm();
+			} else {
+				alert("Error checking in user. Please try again.");
+			}
+		});
+
+		// Clear the form and reset fields.
+		function clearForm() {
+			document.getElementById("user-checkin-form").reset();
+			document.getElementById("children-container").innerHTML = '';
+			document.getElementById("barcode").value = '';
+			document.getElementById("barcode-container").innerHTML = '';
+			// Optionally, clear ACTIVE_USER.
+			window.ACTIVE_USER = null;
+			// Set focus back to the barcode input.
+			document.getElementById("barcode").focus();
+		}
+
+		// Add event listener to the Clear Form button.
+		document.getElementById("clear-button").addEventListener("click", clearForm);
+
+		// Main initialization.
+		(async () => {
+			const barcode_input = document.getElementById("barcode");
+			barcode_input.focus();
+			window.USER = {};
+			window.USER.UUID = get_uuid_in_url();
+
+			// If a UUID is present in the URL, fetch and populate the form.
+			if (window.USER.UUID) {
+				console.log("Found UUID:", window.USER.UUID);
+				let user = await get_user(window.USER.UUID);
+				if (user) {
+					window.ACTIVE_USER = user.user;
+					populate_form(user.user);
+				} else {
+					alert("Error fetching existing user");
+					console.log(user);
+				}
+			}
+		})();
+	</script>
 </body>
 </html>
