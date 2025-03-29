@@ -40,7 +40,6 @@ func SetupCloseHandler() {
 }
 
 func main() {
-	fmt.Println( "Windows Defender ?" )
 	var GenConfig bool
 	flag.BoolVar( &GenConfig , "gen-config" , false , "Generate configuration file" )
 	flag.BoolVar( &GenConfig , "g" , false , "Generate configuration file (shorthand)" )
